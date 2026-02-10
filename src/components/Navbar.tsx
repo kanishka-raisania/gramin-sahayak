@@ -1,15 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, MessageCircle, ShieldCheck, Info } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
-const navItems = [
-  { path: "/", label: "Home", icon: Home },
-  { path: "/chat", label: "Help", icon: MessageCircle },
-  { path: "/verify", label: "Check", icon: ShieldCheck },
-  { path: "/about", label: "About", icon: Info },
+const navItems: { path: string; labelKey: TranslationKey; icon: typeof Home }[] = [
+  { path: "/", labelKey: "navHome", icon: Home },
+  { path: "/chat", labelKey: "navHelp", icon: MessageCircle },
+  { path: "/verify", labelKey: "navCheck", icon: ShieldCheck },
+  { path: "/about", labelKey: "navAbout", icon: Info },
 ];
 
 const Navbar = () => {
   const location = useLocation();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <>
@@ -19,14 +22,15 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl">🌾</span>
             <h1 className="text-xl font-extrabold text-primary-foreground tracking-tight">
-              Gramin Sahayak
+              {t("appTitle")}
             </h1>
           </Link>
-          {/* Language dropdown — UI only for now */}
+          {/* Language selector — persisted in localStorage */}
           {/* Bhashini API integration here later */}
           <select
-            className="rounded-md bg-primary-foreground/20 px-2 py-1 text-sm font-semibold text-primary-foreground border-none outline-none"
-            defaultValue="en"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as "en" | "hi")}
+            className="rounded-md bg-primary-foreground/20 px-2 py-1 text-sm font-semibold text-primary-foreground border-none outline-none cursor-pointer"
           >
             <option value="en">English</option>
             <option value="hi">हिन्दी</option>
@@ -37,7 +41,7 @@ const Navbar = () => {
       {/* Bottom tab bar for mobile */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
         <div className="flex items-center justify-around py-1">
-          {navItems.map(({ path, label, icon: Icon }) => {
+          {navItems.map(({ path, labelKey, icon: Icon }) => {
             const active = location.pathname === path;
             return (
               <Link
@@ -50,7 +54,7 @@ const Navbar = () => {
                 }`}
               >
                 <Icon className="h-6 w-6" strokeWidth={active ? 2.5 : 2} />
-                <span>{label}</span>
+                <span>{t(labelKey)}</span>
               </Link>
             );
           })}

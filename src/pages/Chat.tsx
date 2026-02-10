@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getChatResponse } from "@/data/api";
 import { Send, Bot, User } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Message {
   text: string;
@@ -10,16 +11,14 @@ interface Message {
 // Voice input integration here later
 
 const Chat = () => {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
-    {
-      text: "🙏 Namaste! I am your Gramin Sahayak. Ask me about wages, farming, ration, health, or education.",
-      sender: "bot",
-    },
+    { text: t("chatGreeting"), sender: "bot" },
   ]);
   const [input, setInput] = useState("");
 
-  const handleSend = () => {
-    const text = input.trim();
+  const handleSend = (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text) return;
 
     const userMsg: Message = { text, sender: "user" };
@@ -37,6 +36,13 @@ const Chat = () => {
     }
   };
 
+  // Quick action buttons for common queries
+  const quickActions = [
+    { labelKey: "quickWage" as const, query: "wage" },
+    { labelKey: "quickFarming" as const, query: "farming" },
+    { labelKey: "quickRation" as const, query: "ration" },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col pb-20">
       {/* Chat header */}
@@ -44,9 +50,24 @@ const Chat = () => {
         <div className="container mx-auto flex items-center gap-2">
           <Bot className="h-6 w-6" />
           <div>
-            <h2 className="text-lg font-bold">💬 Ask for Help</h2>
-            <p className="text-xs opacity-80">Ask about wages, farming, ration & more</p>
+            <h2 className="text-lg font-bold">💬 {t("chatTitle")}</h2>
+            <p className="text-xs opacity-80">{t("chatSubtitle")}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Quick action buttons */}
+      <div className="container mx-auto px-4 pt-4 pb-2">
+        <div className="flex gap-2 overflow-x-auto">
+          {quickActions.map(({ labelKey, query }) => (
+            <button
+              key={query}
+              onClick={() => handleSend(query)}
+              className="shrink-0 rounded-full bg-muted px-4 py-2.5 text-sm font-bold text-foreground hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95"
+            >
+              {t(labelKey)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -98,11 +119,11 @@ const Chat = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your question..."
+            placeholder={t("chatPlaceholder")}
             className="flex-1 rounded-full border border-input bg-background px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim()}
             className="rounded-full bg-primary p-3 text-primary-foreground shadow-md transition-all hover:bg-primary/90 active:scale-95 disabled:opacity-50"
           >

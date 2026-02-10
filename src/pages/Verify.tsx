@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { verifyNews } from "@/data/api";
-import { ShieldCheck, AlertTriangle, Search } from "lucide-react";
+import { ShieldCheck, Search, XCircle, CheckCircle } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Verify = () => {
   const [text, setText] = useState("");
   const [result, setResult] = useState<{
     status: string;
+    likely: "false" | "true";
     explanation: string;
   } | null>(null);
+  const { t } = useLanguage();
 
   // ML integration here later — will use trained NLP model
   const handleVerify = () => {
@@ -22,63 +25,73 @@ const Verify = () => {
         <div className="container mx-auto flex items-center gap-2">
           <ShieldCheck className="h-6 w-6" />
           <div>
-            <h2 className="text-lg font-bold">🛡 Check News</h2>
-            <p className="text-xs opacity-80">Verify if a news message is real or fake</p>
+            <h2 className="text-lg font-bold">🛡 {t("verifyTitle")}</h2>
+            <p className="text-xs opacity-80">{t("verifySubtitle")}</p>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Input */}
         <div className="space-y-3">
           <label className="block text-base font-bold text-foreground">
-            📝 Paste the news message below:
+            📝 {t("verifyLabel")}
           </label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Paste a WhatsApp message or news text here..."
+            placeholder={t("verifyPlaceholder")}
             rows={5}
-            className="w-full rounded-lg border border-input bg-background p-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            className="w-full rounded-xl border border-input bg-card p-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none shadow-sm"
           />
           <button
             onClick={handleVerify}
             disabled={!text.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary p-4 text-lg font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-4 text-lg font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
           >
             <Search className="h-5 w-5" />
-            Check Now
+            {t("verifyButton")}
           </button>
         </div>
 
-        {/* Result */}
+        {/* Result — colored card based on likely true/false */}
         {result && (
-          <div className="animate-fade-in rounded-lg border-2 border-secondary bg-card p-5 shadow-md">
-            <div className="flex items-center gap-3 mb-3">
-              <AlertTriangle className="h-8 w-8 text-secondary" />
-              <h3 className="text-lg font-extrabold text-card-foreground">
-                Result
-              </h3>
+          <div
+            className={`animate-fade-in rounded-xl p-6 shadow-lg text-center ${
+              result.likely === "false"
+                ? "bg-destructive/10 border-2 border-destructive"
+                : "bg-primary/10 border-2 border-primary"
+            }`}
+          >
+            <div className="flex justify-center mb-3">
+              {result.likely === "false" ? (
+                <XCircle className="h-16 w-16 text-destructive" />
+              ) : (
+                <CheckCircle className="h-16 w-16 text-primary" />
+              )}
             </div>
-            <div className="rounded-md bg-secondary/10 p-3 mb-3">
-              <p className="text-base font-bold text-foreground">
-                ⚠️ {result.status}
+            <h3 className="text-xl font-extrabold text-foreground mb-2">
+              {t("verifyResult")}
+            </h3>
+            <p
+              className={`text-lg font-bold mb-4 ${
+                result.likely === "false" ? "text-destructive" : "text-primary"
+              }`}
+            >
+              ⚠️ {result.status}
+            </p>
+            <div className="rounded-lg bg-card p-4 text-left">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {result.explanation}
               </p>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {result.explanation}
-            </p>
           </div>
         )}
 
         {/* Info */}
-        <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-          <p className="font-semibold mb-1">ℹ️ How does this work?</p>
-          <p>
-            This is a demo version. In the future, this will use a trained ML
-            model to detect fake news with high accuracy. For now, all inputs
-            return a placeholder response.
-          </p>
+        <div className="rounded-xl bg-muted p-5 text-sm text-muted-foreground">
+          <p className="font-semibold mb-1">ℹ️ {t("verifyHow")}</p>
+          <p>{t("verifyHowDesc")}</p>
         </div>
       </main>
     </div>
