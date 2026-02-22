@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_logs: {
+        Row: {
+          ai_response: string
+          created_at: string
+          id: string
+          intent: string | null
+          language: string | null
+          session_id: string
+          user_message: string
+        }
+        Insert: {
+          ai_response: string
+          created_at?: string
+          id?: string
+          intent?: string | null
+          language?: string | null
+          session_id: string
+          user_message: string
+        }
+        Update: {
+          ai_response?: string
+          created_at?: string
+          id?: string
+          intent?: string | null
+          language?: string | null
+          session_id?: string
+          user_message?: string
+        }
+        Relationships: []
+      }
+      fake_news_checks: {
+        Row: {
+          checked_at: string
+          confidence: number
+          explanation: string
+          id: string
+          news_text: string
+          session_id: string
+          verdict: string
+        }
+        Insert: {
+          checked_at?: string
+          confidence?: number
+          explanation: string
+          id?: string
+          news_text: string
+          session_id: string
+          verdict: string
+        }
+        Update: {
+          checked_at?: string
+          confidence?: number
+          explanation?: string
+          id?: string
+          news_text?: string
+          session_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

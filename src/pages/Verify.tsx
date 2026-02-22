@@ -1,22 +1,96 @@
 import { useState } from "react";
-import { verifyNews } from "@/data/api";
-import { ShieldCheck, Search, XCircle, CheckCircle } from "lucide-react";
+import { ShieldCheck, Search, XCircle, CheckCircle, AlertTriangle, Loader2, History } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
+
+interface VerifyResult {
+  verdict: "true" | "false" | "uncertain";
+  confidence: number;
+  explanation: string;
+  signals?: string[];
+}
+
+// Session ID for tracking
+function getSessionId(): string {
+  let id = localStorage.getItem("gs-session-id");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("gs-session-id", id);
+  }
+  return id;
+}
 
 const Verify = () => {
   const [text, setText] = useState("");
-  const [result, setResult] = useState<{
-    status: string;
-    likely: "false" | "true";
-    explanation: string;
-  } | null>(null);
+  const [result, setResult] = useState<VerifyResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [history, setHistory] = useState<VerifyResult[]>([]);
   const { t } = useLanguage();
+  const { toast } = useToast();
 
-  // ML integration here later — will use trained NLP model
-  const handleVerify = () => {
-    if (!text.trim()) return;
-    const res = verifyNews(text);
-    setResult(res);
+  const handleVerify = async () => {
+    if (!text.trim() || isLoading) return;
+    setIsLoading(true);
+    setResult(null);
+
+    try {
+      const VERIFY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify`;
+      const resp = await fetch(VERIFY_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          text: text.trim(),
+          session_id: getSessionId(),
+        }),
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Error ${resp.status}`);
+      }
+
+      const data: VerifyResult = await resp.json();
+      setResult(data);
+      setHistory((prev) => [data, ...prev].slice(0, 5));
+    } catch (e) {
+      console.error("Verify error:", e);
+      const errorMessage = e instanceof Error ? e.message : "Something went wrong";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verdictConfig = {
+    true: {
+      bg: "bg-primary/10 border-primary",
+      textColor: "text-primary",
+      icon: <CheckCircle className="h-16 w-16 text-primary" />,
+      label: "✅ Likely True",
+      labelHi: "✅ संभवतः सच",
+    },
+    false: {
+      bg: "bg-destructive/10 border-destructive",
+      textColor: "text-destructive",
+      icon: <XCircle className="h-16 w-16 text-destructive" />,
+      label: "❌ Likely False",
+      labelHi: "❌ संभवतः झूठ",
+    },
+    uncertain: {
+      bg: "bg-amber-100/50 border-amber-500 dark:bg-amber-900/20",
+      textColor: "text-amber-600 dark:text-amber-400",
+      icon: <AlertTriangle className="h-16 w-16 text-amber-500" />,
+      label: "⚠️ Not Sure",
+      labelHi: "⚠️ पक्का नहीं",
+    },
   };
 
   return (
@@ -42,49 +116,95 @@ const Verify = () => {
             onChange={(e) => setText(e.target.value)}
             placeholder={t("verifyPlaceholder")}
             rows={5}
+            maxLength={2000}
             className="w-full rounded-xl border border-input bg-card p-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none shadow-sm"
           />
           <button
             onClick={handleVerify}
-            disabled={!text.trim()}
+            disabled={!text.trim() || isLoading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-4 text-lg font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
           >
-            <Search className="h-5 w-5" />
-            {t("verifyButton")}
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Search className="h-5 w-5" />
+            )}
+            {isLoading ? "Analyzing..." : t("verifyButton")}
           </button>
         </div>
 
-        {/* Result — colored card based on likely true/false */}
+        {/* Result */}
         {result && (
           <div
-            className={`animate-fade-in rounded-xl p-6 shadow-lg text-center ${
-              result.likely === "false"
-                ? "bg-destructive/10 border-2 border-destructive"
-                : "bg-primary/10 border-2 border-primary"
+            className={`animate-fade-in rounded-xl p-6 shadow-lg text-center border-2 ${
+              verdictConfig[result.verdict].bg
             }`}
           >
             <div className="flex justify-center mb-3">
-              {result.likely === "false" ? (
-                <XCircle className="h-16 w-16 text-destructive" />
-              ) : (
-                <CheckCircle className="h-16 w-16 text-primary" />
-              )}
+              {verdictConfig[result.verdict].icon}
             </div>
             <h3 className="text-xl font-extrabold text-foreground mb-2">
               {t("verifyResult")}
             </h3>
-            <p
-              className={`text-lg font-bold mb-4 ${
-                result.likely === "false" ? "text-destructive" : "text-primary"
-              }`}
-            >
-              ⚠️ {result.status}
+            <p className={`text-lg font-bold mb-2 ${verdictConfig[result.verdict].textColor}`}>
+              {verdictConfig[result.verdict].label}
             </p>
+
+            {/* Confidence bar */}
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground mb-1">
+                Confidence: {result.confidence}%
+              </p>
+              <Progress value={result.confidence} className="h-3" />
+            </div>
+
             <div className="rounded-lg bg-card p-4 text-left">
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {result.explanation}
               </p>
             </div>
+
+            {result.signals && result.signals.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                {result.signals.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+                  >
+                    {s.replace(/_/g, " ")}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Advice */}
+        {result && (
+          <div className="rounded-xl bg-muted p-4 text-sm text-muted-foreground text-center animate-fade-in">
+            <p className="font-semibold">
+              💡 Always verify important news from official government websites before sharing.
+            </p>
+          </div>
+        )}
+
+        {/* History */}
+        {history.length > 1 && (
+          <div className="space-y-2">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+              <History className="h-4 w-4" /> Recent Checks
+            </h3>
+            {history.slice(1).map((h, i) => (
+              <div
+                key={i}
+                className={`rounded-lg border p-3 text-sm ${verdictConfig[h.verdict].bg}`}
+              >
+                <span className={`font-bold ${verdictConfig[h.verdict].textColor}`}>
+                  {verdictConfig[h.verdict].label}
+                </span>
+                <span className="text-muted-foreground ml-2">({h.confidence}%)</span>
+              </div>
+            ))}
           </div>
         )}
 

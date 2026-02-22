@@ -169,7 +169,7 @@ export const translations = {
     verifyButton: "Check Now",
     verifyResult: "Result",
     verifyHow: "How does this work?",
-    verifyHowDesc: "Our system analyzes the text to check for common patterns found in misinformation. Multi-language support coming soon.",
+    verifyHowDesc: "Our AI system analyzes the text using advanced language models and heuristic signals to detect misinformation patterns. It checks for source credibility, language patterns, and factual accuracy.",
 
     // About page
     aboutTitle: "About Gramin Sahayak",
