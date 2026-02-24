@@ -1,7 +1,11 @@
+/**
+ * BulletinCard — Scannable card for government scheme updates
+ * Shows title, one benefit line, source, and read more CTA
+ * Supports "New" and "Expiring Soon" badges
+ */
 import { type NewsItem, getCategoryFallbackImage } from "@/data/api";
-import { Sprout, HardHat, Globe, ImageOff, Calendar, Building2 } from "lucide-react";
+import { Sprout, HardHat, Globe, ImageOff, Building2, ArrowRight, Clock, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 
@@ -14,34 +18,35 @@ const categoryConfig = {
 interface BulletinCardProps {
   item: NewsItem;
   index: number;
+  onClick: () => void;
 }
 
-const BulletinCard = ({ item, index }: BulletinCardProps) => {
+const BulletinCard = ({ item, index, onClick }: BulletinCardProps) => {
   const config = categoryConfig[item.category];
   const Icon = config.icon;
   const [imgError, setImgError] = useState(false);
   const { t } = useLanguage();
-  const navigate = useNavigate();
-
-  // Format date for display
-  const formattedDate = new Date(item.publishedAt).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-  });
 
   const imageUrl = imgError ? getCategoryFallbackImage(item.category) : item.imageUrl;
 
+  // Determine badges based on publishedAt
+  const daysSincePublished = Math.floor(
+    (Date.now() - new Date(item.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const isNew = daysSincePublished <= 7;
+  const isExpiring = daysSincePublished >= 20;
+
   return (
     <article
-      onClick={() => navigate(`/news/${item.id}`)}
-      className="group rounded-xl border border-border bg-card shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1 animate-fade-in overflow-hidden cursor-pointer focus-within:ring-2 focus-within:ring-primary"
+      onClick={onClick}
+      className="group rounded-2xl border border-border bg-card shadow-sm hover:shadow-xl transition-all duration-200 hover:-translate-y-1 animate-fade-in overflow-hidden cursor-pointer focus-within:ring-2 focus-within:ring-primary"
       style={{ animationDelay: `${index * 60}ms` }}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && navigate(`/news/${item.id}`)}
+      onKeyDown={(e) => e.key === "Enter" && onClick()}
       aria-label={t(item.titleKey as TranslationKey)}
     >
-      {/* Image — reduced height ~120px */}
+      {/* Image */}
       <div className="relative h-[120px] bg-muted overflow-hidden">
         {imgError && !getCategoryFallbackImage(item.category) ? (
           <div className="flex items-center justify-center h-full">
@@ -56,35 +61,56 @@ const BulletinCard = ({ item, index }: BulletinCardProps) => {
             onError={() => setImgError(true)}
           />
         )}
+
         {/* Category badge */}
         <span
-          className={`absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${config.colorClass} shadow-md`}
+          className={`absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${config.colorClass} shadow-md`}
         >
           <Icon className="h-3 w-3" />
           {t((`filter${item.category}`) as TranslationKey)}
         </span>
+
+        {/* Status badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {isNew && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-md">
+              <Sparkles className="h-2.5 w-2.5" />
+              {t("badgeNew" as TranslationKey)}
+            </span>
+          )}
+          {isExpiring && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground shadow-md">
+              <Clock className="h-2.5 w-2.5" />
+              {t("badgeExpiring" as TranslationKey)}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Content */}
-      <div className="p-3 space-y-1.5">
-        <h3 className="text-sm font-bold text-card-foreground leading-tight line-clamp-2 min-h-[2.5rem]">
+      <div className="p-4 space-y-2">
+        <h3 className="text-base font-bold text-card-foreground leading-tight line-clamp-2 min-h-[2.75rem]">
           {t(item.titleKey as TranslationKey)}
         </h3>
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-          {t(item.descKey as TranslationKey)}
-        </p>
 
-        {/* Date + Source */}
-        <div className="flex items-center gap-3 pt-1 text-[10px] text-muted-foreground/70">
-          <span className="inline-flex items-center gap-0.5">
-            <Calendar className="h-3 w-3" />
-            {formattedDate}
-          </span>
-          <span className="inline-flex items-center gap-0.5 truncate">
-            <Building2 className="h-3 w-3" />
-            {t(item.sourceKey as TranslationKey)}
-          </span>
+        {/* One benefit line */}
+        {item.benefitsKeys[0] && (
+          <p className="text-sm text-primary font-medium line-clamp-1">
+            {t(item.benefitsKeys[0] as TranslationKey)}
+          </p>
+        )}
+
+        {/* Source */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Building2 className="h-3.5 w-3.5" />
+          <span className="truncate">{t(item.sourceKey as TranslationKey)}</span>
         </div>
+
+        {/* Read More CTA */}
+        <button className="flex items-center gap-1 text-sm font-bold text-primary group-hover:underline pt-1">
+          {t("readMore" as TranslationKey)}
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </button>
       </div>
     </article>
   );

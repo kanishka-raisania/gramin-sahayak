@@ -1,57 +1,74 @@
+/**
+ * Home — Main landing page with bulletin board and quick action cards
+ */
 import { Link } from "react-router-dom";
-import { MessageCircle, ShieldCheck, Info } from "lucide-react";
+import { MessageCircle, ShieldCheck, Sprout, Scale } from "lucide-react";
 import BulletinBoard from "@/components/BulletinBoard";
 import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
 const Home = () => {
   const { t } = useLanguage();
 
-  const actionButtons = [
+  const quickActions = [
     {
       to: "/chat",
-      emoji: "💬",
-      labelKey: "askForHelp" as const,
+      icon: MessageCircle,
+      labelKey: "quickWage" as const,
       descKey: "askForHelpDesc" as const,
-      color: "bg-primary hover:bg-primary/90 text-primary-foreground",
+      color: "bg-primary/10 border-primary/20 hover:bg-primary/15",
+      iconColor: "text-primary",
     },
     {
-      to: "/verify",
-      emoji: "🛡",
-      labelKey: "checkNews" as const,
-      descKey: "checkNewsDesc" as const,
-      color: "bg-secondary hover:bg-secondary/90 text-secondary-foreground",
+      to: "/chat",
+      icon: Sprout,
+      labelKey: "quickFarming" as const,
+      descKey: "quickFarmingDesc" as const,
+      color: "bg-farmer/10 border-farmer/20 hover:bg-farmer/15",
+      iconColor: "text-farmer",
     },
     {
-      to: "/about",
-      emoji: "ℹ️",
-      labelKey: "aboutApp" as const,
-      descKey: "aboutAppDesc" as const,
-      color: "bg-accent hover:bg-accent/90 text-accent-foreground",
+      to: "/chat",
+      icon: ShieldCheck,
+      labelKey: "quickRation" as const,
+      descKey: "quickRationDesc" as const,
+      color: "bg-accent/10 border-accent/20 hover:bg-accent/15",
+      iconColor: "text-accent",
+    },
+    {
+      to: "/chat",
+      icon: Scale,
+      labelKey: "quickLegal" as const,
+      descKey: "quickLegalDesc" as const,
+      color: "bg-secondary/10 border-secondary/20 hover:bg-secondary/15",
+      iconColor: "text-secondary",
     },
   ];
 
   return (
     <div className="min-h-screen pb-24">
       <main className="container mx-auto px-4 py-8 space-y-10">
-        {/* Bulletin Board — shown first */}
+        {/* Bulletin Board */}
         <BulletinBoard />
 
-        {/* Action Buttons */}
+        {/* Quick Actions */}
         <section>
-          <h2 className="text-xl font-extrabold text-foreground mb-4">
-            🚀 {t("quickActions")}
+          <h2 className="text-xl font-extrabold text-foreground mb-5">
+            {t("quickActions")}
           </h2>
-          <div className="grid gap-3">
-            {actionButtons.map(({ to, emoji, labelKey, descKey, color }) => (
+          <div className="grid grid-cols-2 gap-3">
+            {quickActions.map(({ to, icon: ActionIcon, labelKey, descKey, color, iconColor }) => (
               <Link
-                key={to}
+                key={labelKey}
                 to={to}
-                className={`flex items-center gap-4 rounded-xl p-5 shadow-sm transition-all hover:shadow-md active:scale-[0.98] ${color}`}
+                className={`flex flex-col items-center gap-2.5 rounded-2xl border p-5 shadow-sm transition-all hover:shadow-md active:scale-[0.98] ${color}`}
               >
-                <span className="text-3xl">{emoji}</span>
-                <div>
-                  <div className="text-lg font-bold">{t(labelKey)}</div>
-                  <div className="text-sm opacity-90">{t(descKey)}</div>
+                <div className={`rounded-full bg-card p-3 shadow-sm ${iconColor}`}>
+                  <ActionIcon className="h-6 w-6" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold text-foreground">{t(labelKey as TranslationKey)}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{t(descKey as TranslationKey)}</div>
                 </div>
               </Link>
             ))}

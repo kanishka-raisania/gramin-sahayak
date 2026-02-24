@@ -1,69 +1,56 @@
-import { useState } from "react";
+/**
+ * LanguageSelector — First-launch screen for language selection
+ * Large buttons with native script names, no emojis
+ */
 import { useLanguage } from "@/i18n/LanguageContext";
-import { type Language, languageNames } from "@/i18n/translations";
-import { Globe } from "lucide-react";
+import type { Language, TranslationKey } from "@/i18n/translations";
+import GraminLogo from "./GraminLogo";
 
-const languages: { code: Language; label: string; greeting: string }[] = [
-  { code: "hi", label: "हिन्दी", greeting: "नमस्ते" },
-  { code: "en", label: "English", greeting: "Hello" },
-  { code: "pa", label: "ਪੰਜਾਬੀ", greeting: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ" },
-  { code: "bn", label: "বাংলা", greeting: "নমস্কার" },
-  { code: "ta", label: "தமிழ்", greeting: "வணக்கம்" },
+const languageList: { code: Language; native: string }[] = [
+  { code: "en", native: "English" },
+  { code: "hi", native: "हिन्दी" },
+  { code: "pa", native: "ਪੰਜਾਬੀ" },
+  { code: "bn", native: "বাংলা" },
+  { code: "ta", native: "தமிழ்" },
 ];
 
 const LanguageSelector = () => {
-  const { language, setLanguage, t, markLanguageChosen } = useLanguage();
-  const [selected, setSelected] = useState<Language>(language);
-
-  const handleContinue = () => {
-    setLanguage(selected);
-    markLanguageChosen();
-  };
+  const { language, setLanguage, markLanguageChosen, t } = useLanguage();
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
-      <div className="w-full max-w-md px-6 py-10 text-center">
-        {/* Icon */}
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-          <span className="text-5xl">🌾</span>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 py-12">
+      <div className="w-full max-w-sm flex flex-col items-center gap-8">
+        <GraminLogo size={72} />
+
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-extrabold text-foreground">Gramin Sahayak</h1>
+          <p className="text-sm text-muted-foreground">Rural Digital Assistant</p>
         </div>
 
-        <h1 className="text-2xl font-extrabold text-foreground mb-2">
-          {t("chooseLang")}
-        </h1>
-        <p className="text-base text-muted-foreground mb-8">
-          {t("chooseLangDesc")}
-        </p>
-
-        {/* Language buttons */}
-        <div className="space-y-3 mb-8">
-          {languages.map(({ code, label, greeting }) => (
+        <div className="w-full space-y-2">
+          <p className="text-base font-bold text-foreground text-center mb-4">
+            {t("chooseLang" as TranslationKey)}
+          </p>
+          {languageList.map(({ code, native }) => (
             <button
               key={code}
-              onClick={() => setSelected(code)}
-              className={`w-full flex items-center justify-between rounded-2xl px-6 py-4 text-left transition-all border-2 ${
-                selected === code
-                  ? "border-primary bg-primary/10 shadow-md"
-                  : "border-border bg-card hover:border-primary/40"
+              onClick={() => setLanguage(code)}
+              className={`w-full rounded-2xl border-2 px-6 py-4 text-lg font-bold transition-all active:scale-[0.98] ${
+                language === code
+                  ? "border-primary bg-primary/10 text-primary shadow-md"
+                  : "border-border bg-card text-foreground hover:border-primary/50"
               }`}
             >
-              <div>
-                <span className="text-xl font-bold text-foreground">{label}</span>
-                <span className="ml-3 text-sm text-muted-foreground">{greeting}</span>
-              </div>
-              {selected === code && (
-                <span className="text-primary text-xl">✓</span>
-              )}
+              {native}
             </button>
           ))}
         </div>
 
-        {/* Continue button */}
         <button
-          onClick={handleContinue}
-          className="w-full rounded-2xl bg-primary py-4 text-lg font-bold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 active:scale-[0.98]"
+          onClick={markLanguageChosen}
+          className="w-full rounded-2xl bg-primary py-4 text-lg font-bold text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors active:scale-[0.98]"
         >
-          {t("continueLang")} →
+          {t("continueLang" as TranslationKey)}
         </button>
       </div>
     </div>

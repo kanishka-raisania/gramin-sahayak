@@ -139,7 +139,7 @@ const NewsDetail = () => {
         {/* Simple summary — "Why this matters to you" */}
         <div className="rounded-xl bg-primary/10 border border-primary/20 p-4 mb-4">
           <h3 className="text-sm font-bold text-primary mb-1">
-            💡 {t("whyThisMatters" as TranslationKey)}
+            {t("whyThisMatters" as TranslationKey)}
           </h3>
           <p className="text-base font-medium text-foreground leading-relaxed">
             {t(item.simpleSummaryKey as TranslationKey)}

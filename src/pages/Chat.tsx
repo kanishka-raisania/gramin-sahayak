@@ -1,16 +1,23 @@
+/**
+ * Chat — AI-powered chatbot with streaming responses
+ * Features: bot avatar, typing indicator, formatted messages, skeleton loader
+ */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import GraminLogo from "@/components/GraminLogo";
+import ChatMessageBubble from "@/components/ChatMessageBubble";
 
 interface Message {
   text: string;
   sender: "user" | "bot";
 }
 
-// Persist session ID across page loads
+/** Persistent session ID */
 function getSessionId(): string {
   let id = localStorage.getItem("gs-session-id");
   if (!id) {
@@ -48,7 +55,6 @@ const Chat = () => {
     setInput("");
     setIsLoading(true);
 
-    // Build history for context
     const history = messages.slice(-10).map((m) => ({
       role: m.sender === "user" ? "user" : "assistant",
       text: m.text,
@@ -74,17 +80,14 @@ const Chat = () => {
         const errData = await resp.json().catch(() => ({}));
         throw new Error(errData.error || `Error ${resp.status}`);
       }
-
       if (!resp.body) throw new Error("No response body");
 
-      // Stream the response token by token
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
       let assistantText = "";
       let streamDone = false;
 
-      // Add empty bot message to fill in
       setMessages((prev) => [...prev, { text: "", sender: "bot" }]);
 
       while (!streamDone) {
@@ -102,10 +105,7 @@ const Chat = () => {
           if (!line.startsWith("data: ")) continue;
 
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
 
           try {
             const parsed = JSON.parse(jsonStr);
@@ -151,12 +151,11 @@ const Chat = () => {
         }
       }
 
-      // If we got no text at all, show fallback
       if (!assistantText) {
         setMessages((prev) => {
           const updated = [...prev];
           updated[updated.length - 1] = {
-            text: "🙏 I couldn't process your request right now. Please try again.",
+            text: t("chatFallback" as TranslationKey),
             sender: "bot",
           };
           return updated;
@@ -165,15 +164,8 @@ const Chat = () => {
     } catch (e) {
       console.error("Chat error:", e);
       const errorMessage = e instanceof Error ? e.message : "Something went wrong";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      setMessages((prev) => [
-        ...prev,
-        { text: `⚠️ ${errorMessage}`, sender: "bot" },
-      ]);
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+      setMessages((prev) => [...prev, { text: errorMessage, sender: "bot" }]);
     } finally {
       setIsLoading(false);
     }
@@ -186,16 +178,19 @@ const Chat = () => {
     }
   };
 
+  /** Quick action queries per language */
   const quickQueries: Record<string, Record<string, string>> = {
     quickWage: { en: "Tell me about wages", hi: "मजदूरी के बारे में बताएं", pa: "ਮਜ਼ਦੂਰੀ ਬਾਰੇ ਦੱਸੋ", bn: "মজুরি সম্পর্কে বলুন", ta: "கூலி பற்றி சொல்லுங்கள்" },
     quickFarming: { en: "I need farming help", hi: "खेती में मदद चाहिए", pa: "ਖੇਤੀ ਵਿੱਚ ਮਦਦ ਚਾਹੀਦੀ", bn: "চাষে সাহায্য চাই", ta: "விவசாய உதவி தேவை" },
     quickRation: { en: "How to get ration card", hi: "राशन कार्ड कैसे बनवाएं", pa: "ਰਾਸ਼ਨ ਕਾਰਡ ਕਿਵੇਂ ਬਣਵਾਈਏ", bn: "রেশন কার্ড কীভাবে পাবো", ta: "ரேஷன் அட்டை எப்படி பெறுவது" },
+    quickLegal: { en: "Tell me about my legal rights", hi: "मेरे कानूनी अधिकार बताएं", pa: "ਮੇਰੇ ਕਾਨੂੰਨੀ ਅਧਿਕਾਰ ਦੱਸੋ", bn: "আমার আইনি অধিকার বলুন", ta: "எனது சட்ட உரிமைகள் சொல்லுங்கள்" },
   };
 
   const quickActions = [
     { labelKey: "quickWage" as const, query: quickQueries.quickWage[language] || quickQueries.quickWage.en },
     { labelKey: "quickFarming" as const, query: quickQueries.quickFarming[language] || quickQueries.quickFarming.en },
     { labelKey: "quickRation" as const, query: quickQueries.quickRation[language] || quickQueries.quickRation.en },
+    { labelKey: "quickLegal" as const, query: quickQueries.quickLegal[language] || quickQueries.quickLegal.en },
   ];
 
   return (
@@ -209,13 +204,13 @@ const Chat = () => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h2 className="text-lg font-bold">💬 {t("chatTitle")}</h2>
+            <h2 className="text-lg font-bold">{t("chatTitle")}</h2>
             <p className="text-xs opacity-80">{t("chatSubtitle")}</p>
           </div>
         </div>
       </div>
 
-      {/* Quick actions */}
+      {/* Quick actions — large cards */}
       <div className="container mx-auto px-4 pt-4 pb-2">
         <div className="flex gap-2 overflow-x-auto">
           {quickActions.map(({ labelKey, query }) => (
@@ -223,9 +218,9 @@ const Chat = () => {
               key={labelKey}
               onClick={() => handleSend(query)}
               disabled={isLoading}
-              className="shrink-0 rounded-full bg-muted px-4 py-2.5 text-sm font-bold text-foreground hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95 disabled:opacity-50"
+              className="shrink-0 rounded-2xl bg-muted px-5 py-3 text-sm font-bold text-foreground hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95 disabled:opacity-50 border border-border"
             >
-              {t(labelKey)}
+              {t(labelKey as TranslationKey)}
             </button>
           ))}
         </div>
@@ -235,39 +230,7 @@ const Chat = () => {
       <ScrollArea className="flex-1 px-4 py-4 container mx-auto">
         <div className="space-y-3">
           {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex items-end gap-2 animate-fade-in ${
-                msg.sender === "user" ? "flex-row-reverse" : ""
-              }`}
-            >
-              <div
-                className={`shrink-0 rounded-full p-1.5 ${
-                  msg.sender === "user"
-                    ? "bg-secondary text-secondary-foreground"
-                    : "bg-primary text-primary-foreground"
-                }`}
-              >
-                {msg.sender === "user" ? (
-                  <User className="h-4 w-4" />
-                ) : (
-                  <Bot className="h-4 w-4" />
-                )}
-              </div>
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                  msg.sender === "user"
-                    ? "bg-secondary text-secondary-foreground rounded-br-sm"
-                    : "bg-card text-card-foreground border border-border rounded-bl-sm"
-                }`}
-              >
-                {msg.text.split("\n").map((line, j) => (
-                  <p key={j} className={j > 0 ? "mt-1" : ""}>
-                    {line}
-                  </p>
-                ))}
-              </div>
-            </div>
+            <ChatMessageBubble key={i} message={msg} />
           ))}
 
           {/* Typing indicator */}
@@ -277,6 +240,9 @@ const Chat = () => {
                 <Bot className="h-4 w-4" />
               </div>
               <div className="rounded-2xl px-4 py-3 bg-card border border-border rounded-bl-sm">
+                <p className="text-xs text-muted-foreground mb-1 font-medium">
+                  {t("typingIndicator" as TranslationKey)}
+                </p>
                 <div className="flex gap-1">
                   <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
                   <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />

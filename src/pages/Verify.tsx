@@ -96,7 +96,7 @@ const Verify = () => {
         <div className="container mx-auto flex items-center gap-2">
           <ShieldCheck className="h-6 w-6" />
           <div>
-            <h2 className="text-lg font-bold">🛡 {t("verifyTitle")}</h2>
+            <h2 className="text-lg font-bold">{t("verifyTitle")}</h2>
             <p className="text-xs opacity-80">{t("verifySubtitle")}</p>
           </div>
         </div>
@@ -106,7 +106,7 @@ const Verify = () => {
         {/* Input */}
         <div className="space-y-3">
           <label className="block text-base font-bold text-foreground">
-            📝 {t("verifyLabel")}
+            {t("verifyLabel")}
           </label>
           <textarea
             value={text}
@@ -179,7 +179,7 @@ const Verify = () => {
         {/* Advice */}
         {result && (
           <div className="rounded-xl bg-muted p-4 text-sm text-muted-foreground text-center animate-fade-in">
-            <p className="font-semibold">💡 {t("verifyAdvice")}</p>
+            <p className="font-semibold">{t("verifyAdvice")}</p>
           </div>
         )}
 
@@ -205,7 +205,7 @@ const Verify = () => {
 
         {/* Info */}
         <div className="rounded-xl bg-muted p-5 text-sm text-muted-foreground">
-          <p className="font-semibold mb-1">ℹ️ {t("verifyHow")}</p>
+          <p className="font-semibold mb-1">{t("verifyHow")}</p>
           <p>{t("verifyHowDesc")}</p>
         </div>
       </main>
