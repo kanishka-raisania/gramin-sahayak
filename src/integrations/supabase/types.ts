@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      bulletin_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          is_expiring: boolean
+          last_fetched_at: string | null
+          publish_date: string
+          rss_guid: string | null
+          source: string
+          source_url: string | null
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          is_expiring?: boolean
+          last_fetched_at?: string | null
+          publish_date?: string
+          rss_guid?: string | null
+          source?: string
+          source_url?: string | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          is_expiring?: boolean
+          last_fetched_at?: string | null
+          publish_date?: string
+          rss_guid?: string | null
+          source?: string
+          source_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       chat_logs: {
         Row: {
           ai_response: string
@@ -41,6 +86,54 @@ export type Database = {
           language?: string | null
           session_id?: string
           user_message?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          sender: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          sender: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          sender?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
+      chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          session_id: string
+          user_role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          session_id: string
+          user_role?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          session_id?: string
+          user_role?: string
         }
         Relationships: []
       }

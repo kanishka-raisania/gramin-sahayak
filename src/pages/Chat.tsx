@@ -1,20 +1,43 @@
 /**
  * Chat — AI-powered chatbot with streaming responses
- * Features: bot avatar, typing indicator, formatted messages, skeleton loader
+ * Features: humanized avatar, typing indicator, chat history persistence, role selector
  */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Loader2, Sprout, HardHat, Globe } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import GraminLogo from "@/components/GraminLogo";
 import ChatMessageBubble from "@/components/ChatMessageBubble";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   text: string;
   sender: "user" | "bot";
+}
+
+type UserRole = "general" | "farmer" | "worker";
+
+/** Pre-selected rural Indian farmer/worker profile images (same as ChatMessageBubble) */
+const AVATAR_IMAGES = [
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1599566150163-29194dcabd9c?w=100&h=100&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?w=100&h=100&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=100&h=100&fit=crop&crop=face",
+];
+
+function getAvatarIndex(): number {
+  const stored = localStorage.getItem("gs-chat-avatar");
+  if (stored !== null) {
+    const idx = parseInt(stored);
+    if (!isNaN(idx) && idx >= 0 && idx < AVATAR_IMAGES.length) return idx;
+  }
+  const idx = Math.floor(Math.random() * AVATAR_IMAGES.length);
+  localStorage.setItem("gs-chat-avatar", String(idx));
+  return idx;
 }
 
 /** Persistent session ID */
@@ -27,16 +50,22 @@ function getSessionId(): string {
   return id;
 }
 
+/** Get stored user role */
+function getStoredRole(): UserRole {
+  return (localStorage.getItem("gs-user-role") as UserRole) || "general";
+}
+
 const Chat = () => {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
-    { text: t("chatGreeting"), sender: "bot" },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>(getStoredRole());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef(getSessionId());
+  const avatarIdx = getAvatarIndex();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,6 +75,81 @@ const Chat = () => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  /** Load chat history from database */
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("chat_messages")
+          .select("sender, message, created_at")
+          .eq("session_id", sessionId.current)
+          .order("created_at", { ascending: true })
+          .limit(100);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const loaded: Message[] = data.map((row) => ({
+            text: row.message,
+            sender: row.sender as "user" | "bot",
+          }));
+          setMessages(loaded);
+        } else {
+          // No history — show greeting
+          setMessages([{ text: t("chatGreeting"), sender: "bot" }]);
+        }
+      } catch (err) {
+        console.error("Failed to load chat history:", err);
+        setMessages([{ text: t("chatGreeting"), sender: "bot" }]);
+      } finally {
+        setHistoryLoaded(true);
+      }
+    };
+    loadHistory();
+  }, [t]);
+
+  /** Save a message to the database */
+  const saveMessage = async (sender: "user" | "bot", message: string) => {
+    try {
+      await supabase.from("chat_messages").insert({
+        session_id: sessionId.current,
+        sender,
+        message,
+      });
+    } catch (err) {
+      console.error("Failed to save message:", err);
+    }
+  };
+
+  /** Ensure session exists */
+  useEffect(() => {
+    const ensureSession = async () => {
+      try {
+        const { data } = await supabase
+          .from("chat_sessions")
+          .select("id")
+          .eq("session_id", sessionId.current)
+          .limit(1);
+
+        if (!data || data.length === 0) {
+          await supabase.from("chat_sessions").insert({
+            session_id: sessionId.current,
+            user_role: userRole,
+            language,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to create session:", err);
+      }
+    };
+    ensureSession();
+  }, [userRole, language]);
+
+  const handleRoleChange = (role: UserRole) => {
+    setUserRole(role);
+    localStorage.setItem("gs-user-role", role);
+  };
+
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text || isLoading) return;
@@ -54,6 +158,9 @@ const Chat = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
+
+    // Save user message
+    saveMessage("user", text);
 
     const history = messages.slice(-10).map((m) => ({
       role: m.sender === "user" ? "user" : "assistant",
@@ -73,6 +180,7 @@ const Chat = () => {
           session_id: sessionId.current,
           language,
           history,
+          user_role: userRole,
         }),
       });
 
@@ -152,14 +260,15 @@ const Chat = () => {
       }
 
       if (!assistantText) {
+        const fallback = t("chatFallback" as TranslationKey);
         setMessages((prev) => {
           const updated = [...prev];
-          updated[updated.length - 1] = {
-            text: t("chatFallback" as TranslationKey),
-            sender: "bot",
-          };
+          updated[updated.length - 1] = { text: fallback, sender: "bot" };
           return updated;
         });
+        saveMessage("bot", fallback);
+      } else {
+        saveMessage("bot", assistantText);
       }
     } catch (e) {
       console.error("Chat error:", e);
@@ -193,14 +302,25 @@ const Chat = () => {
     { labelKey: "quickLegal" as const, query: quickQueries.quickLegal[language] || quickQueries.quickLegal.en },
   ];
 
+  const roleOptions: { key: UserRole; icon: typeof Sprout; labelKey: string }[] = [
+    { key: "farmer", icon: Sprout, labelKey: "filterFarmer" },
+    { key: "worker", icon: HardHat, labelKey: "filterWorker" },
+    { key: "general", icon: Globe, labelKey: "filterGeneral" },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col pb-20">
-      {/* Header */}
+      {/* Header with humanized avatar */}
       <div className="bg-primary px-4 py-3 text-primary-foreground">
         <div className="container mx-auto flex items-center gap-3">
           <Avatar className="h-10 w-10 border-2 border-primary-foreground/30">
-            <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
-              <Bot className="h-5 w-5" />
+            <AvatarImage
+              src={AVATAR_IMAGES[avatarIdx]}
+              alt="Gramin Sahayak"
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-sm font-bold">
+              GS
             </AvatarFallback>
           </Avatar>
           <div>
@@ -210,8 +330,28 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Quick actions — large cards */}
-      <div className="container mx-auto px-4 pt-4 pb-2">
+      {/* Role selector */}
+      <div className="container mx-auto px-4 pt-3 pb-1">
+        <div className="flex gap-2">
+          {roleOptions.map(({ key, icon: RoleIcon, labelKey }) => (
+            <button
+              key={key}
+              onClick={() => handleRoleChange(key)}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
+                userRole === key
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              <RoleIcon className="h-3.5 w-3.5" />
+              {t(labelKey as TranslationKey)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="container mx-auto px-4 pt-2 pb-2">
         <div className="flex gap-2 overflow-x-auto">
           {quickActions.map(({ labelKey, query }) => (
             <button
@@ -229,16 +369,23 @@ const Chat = () => {
       {/* Messages */}
       <ScrollArea className="flex-1 px-4 py-4 container mx-auto">
         <div className="space-y-3">
-          {messages.map((msg, i) => (
+          {!historyLoaded && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {historyLoaded && messages.map((msg, i) => (
             <ChatMessageBubble key={i} message={msg} />
           ))}
 
           {/* Typing indicator */}
           {isLoading && messages[messages.length - 1]?.sender === "user" && (
             <div className="flex items-end gap-2 animate-fade-in">
-              <div className="shrink-0 rounded-full p-1.5 bg-primary text-primary-foreground">
-                <Bot className="h-4 w-4" />
-              </div>
+              <Avatar className="h-8 w-8 shrink-0 border border-primary/30">
+                <AvatarImage src={AVATAR_IMAGES[avatarIdx]} alt="Gramin Sahayak" className="object-cover" />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">GS</AvatarFallback>
+              </Avatar>
               <div className="rounded-2xl px-4 py-3 bg-card border border-border rounded-bl-sm">
                 <p className="text-xs text-muted-foreground mb-1 font-medium">
                   {t("typingIndicator" as TranslationKey)}

@@ -1,3 +1,7 @@
+/**
+ * chat — AI-powered chatbot with streaming, user_role support
+ * Uses Lovable AI Gateway with Gemini Flash
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -17,11 +21,31 @@ function detectIntent(message: string): string {
   return "general";
 }
 
+/** Get role-specific prompt additions */
+function getRolePrompt(role: string): string {
+  switch (role) {
+    case "farmer":
+      return `\nThe user has identified as a FARMER. Prioritize agriculture-related responses:
+- Focus on PM-KISAN, crop insurance (PMFBY), soil health, KCC loans, eNAM
+- Give farming advice: seeds, fertilizers, irrigation, weather
+- Mention Kisan Call Centre: 1800-180-1551
+- Talk about MSP, procurement, and market prices when relevant`;
+    case "worker":
+      return `\nThe user has identified as a WORKER. Prioritize labor-related responses:
+- Focus on MGNREGA, e-Shram, minimum wages, labour rights
+- Explain worker welfare schemes, pension (PM-SYM), insurance
+- Mention Labour helpline: 14434
+- Discuss workplace safety, contractor obligations, wage disputes`;
+    default:
+      return "";
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { message, session_id, language = "en", history = [] } = await req.json();
+    const { message, session_id, language = "en", history = [], user_role = "general" } = await req.json();
 
     if (!message?.trim()) {
       return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -42,6 +66,7 @@ serve(async (req) => {
       en: "Respond in simple English. Use short sentences. Avoid technical words.",
     };
     const langInstruction = langMap[language] || langMap.en;
+    const rolePrompt = getRolePrompt(user_role);
 
     const systemPrompt = `You are Gramin Sahayak (ग्रामीण सहायक), a rural Indian digital assistant.
 
@@ -53,8 +78,11 @@ Your role:
 - Be warm, respectful, and encouraging
 - Use examples with rupee amounts when possible
 - Keep answers under 150 words
+- Use bullet points and numbered steps
+- Use **bold** for important information
 
 ${langInstruction}
+${rolePrompt}
 
 Important government helplines:
 - Kisan Call Centre: 1800-180-1551
@@ -101,10 +129,6 @@ Important government helplines:
       console.error("AI gateway error:", response.status, t);
       throw new Error("AI gateway error");
     }
-
-    // Save to database in background (non-blocking)
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // Stream response back
     return new Response(response.body, {
