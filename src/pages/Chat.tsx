@@ -3,7 +3,7 @@
  * Features: bot avatar, typing indicator, formatted messages, skeleton loader
  */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
