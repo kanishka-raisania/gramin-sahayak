@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { translations, type Language, type TranslationKey } from "./translations";
+import { extraTranslationsEn } from "@/data/extraTranslations";
 
 interface LanguageContextType {
   language: Language;
@@ -45,9 +46,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const t = useCallback(
-    (key: TranslationKey): string => {
+    (key: TranslationKey | string): string => {
       const langTranslations = translations[language] as Record<string, string>;
-      return langTranslations[key] ?? (translations.en as Record<string, string>)[key] ?? key;
+      const extra = extraTranslationsEn as Record<string, string>;
+      return langTranslations[key] ?? (translations.en as Record<string, string>)[key] ?? extra[key] ?? key;
     },
     [language]
   );

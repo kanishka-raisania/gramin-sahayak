@@ -1,6 +1,7 @@
 // Data and API functions for Gramin Sahayak
 // Real API integration ready — currently using verified government scheme data
 // Backend proxy endpoint: GET /api/news (FastAPI/Express — connect when ready)
+import { extraNewsData } from "./extraNews";
 
 export interface NewsItem {
   id: number;
@@ -168,14 +169,28 @@ export const newsData: NewsItem[] = [
   },
 ];
 
-// GET /api/news — returns all news items
+// Combined data — original + extra seeded items (50+ total)
+const allNewsData: NewsItem[] = [...newsData, ...extraNewsData];
+
+// GET /api/news — returns all news items sorted by date
 export function fetchNews(): NewsItem[] {
-  return newsData;
+  return allNewsData.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+}
+
+// Paginated fetch — returns page slice + total count
+export function fetchNewsPaginated(page: number, perPage: number, category?: string): { items: NewsItem[]; total: number } {
+  let items = fetchNews();
+  if (category && category !== "All") {
+    items = items.filter((n) => n.category === category);
+  }
+  const total = items.length;
+  const start = (page - 1) * perPage;
+  return { items: items.slice(start, start + perPage), total };
 }
 
 // GET /api/news/:id — returns single news item
 export function fetchNewsById(id: number): NewsItem | undefined {
-  return newsData.find((item) => item.id === id);
+  return allNewsData.find((item) => item.id === id);
 }
 
 // POST /api/chat — simple keyword-based chatbot
