@@ -193,12 +193,30 @@ const Chat = () => {
     { labelKey: "quickLegal" as const, query: quickQueries.quickLegal[language] || quickQueries.quickLegal.en },
   ];
 
+  // Get bot avatar from session (same as ChatMessageBubble)
+  const botAvatarSrc = (() => {
+    let idx = sessionStorage.getItem("gs-avatar-idx");
+    if (!idx) {
+      idx = String(Math.floor(Math.random() * 5));
+      sessionStorage.setItem("gs-avatar-idx", idx);
+    }
+    const avatarImports = [
+      "/src/assets/avatar-farmer-1.jpg",
+      "/src/assets/avatar-farmer-2.jpg",
+      "/src/assets/avatar-farmer-3.jpg",
+      "/src/assets/avatar-farmer-4.jpg",
+      "/src/assets/avatar-farmer-5.jpg",
+    ];
+    return avatarImports[Number(idx)] || avatarImports[0];
+  })();
+
   return (
     <div className="flex min-h-screen flex-col pb-20">
       {/* Header */}
       <div className="bg-primary px-4 py-3 text-primary-foreground">
         <div className="container mx-auto flex items-center gap-3">
           <Avatar className="h-10 w-10 border-2 border-primary-foreground/30">
+            <AvatarImage src={botAvatarSrc} alt="Assistant" />
             <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
               <Bot className="h-5 w-5" />
             </AvatarFallback>
