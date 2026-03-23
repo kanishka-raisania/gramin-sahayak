@@ -169,9 +169,23 @@ export const newsData: NewsItem[] = [
   },
 ];
 
-// GET /api/news — returns all news items
+// Combined data — original + extra seeded items (50+ total)
+const allNewsData: NewsItem[] = [...newsData, ...extraNewsData];
+
+// GET /api/news — returns all news items sorted by date
 export function fetchNews(): NewsItem[] {
-  return newsData;
+  return allNewsData.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+}
+
+// Paginated fetch — returns page slice + total count
+export function fetchNewsPaginated(page: number, perPage: number, category?: string): { items: NewsItem[]; total: number } {
+  let items = fetchNews();
+  if (category && category !== "All") {
+    items = items.filter((n) => n.category === category);
+  }
+  const total = items.length;
+  const start = (page - 1) * perPage;
+  return { items: items.slice(start, start + perPage), total };
 }
 
 // GET /api/news/:id — returns single news item
