@@ -42,7 +42,7 @@ const Navbar = () => {
           <select
             value={language}
             onChange={(e) => handleLanguageChange(e.target.value as Language)}
-            className="rounded-full bg-[#F3F4F6] px-4 py-2 text-sm font-semibold text-[#111827] border border-border outline-none cursor-pointer hover:bg-[#E5E7EB] transition-colors"
+            className="rounded-full bg-card/90 px-4 py-2 text-sm font-semibold text-foreground border border-border shadow-sm outline-none cursor-pointer hover:bg-card transition-colors backdrop-blur-sm"
           >
             {(Object.keys(languageNames) as Language[]).map((code) => (
               <option key={code} value={code}>
