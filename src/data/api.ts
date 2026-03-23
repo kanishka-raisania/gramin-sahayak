@@ -190,7 +190,7 @@ export function fetchNewsPaginated(page: number, perPage: number, category?: str
 
 // GET /api/news/:id — returns single news item
 export function fetchNewsById(id: number): NewsItem | undefined {
-  return newsData.find((item) => item.id === id);
+  return allNewsData.find((item) => item.id === id);
 }
 
 // POST /api/chat — simple keyword-based chatbot
