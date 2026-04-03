@@ -233,6 +233,53 @@ export const translations = {
     aboutTrustAIDesc: "Advanced AI checks facts and detects misinformation.",
     aboutTrustAccessible: "Built for Everyone",
     aboutTrustAccessibleDesc: "Designed specifically for rural communities with low literacy.",
+
+    // Onboarding
+    onboardWhoTitle: "Who are you?",
+    onboardWhoSubtitle: "Let us understand you better to help you better.",
+    onboardRoleFarmer: "Farmer",
+    onboardRoleFarmerDesc: "I grow crops or raise animals",
+    onboardRoleWorker: "Worker",
+    onboardRoleWorkerDesc: "I do daily wage or construction work",
+    onboardRoleCitizen: "Citizen",
+    onboardRoleCitizenDesc: "I need general government help",
+    onboardStateTitle: "Where do you live?",
+    onboardStateSubtitle: "This helps us show you local schemes",
+    onboardStateSelect: "Select your state",
+    onboardStart: "Start Using Gramin Sahayak",
+
+    // Profile
+    navProfile: "Profile",
+    profileTitle: "Your Profile",
+    profileInfo: "Profile Information",
+    profileEdit: "Edit",
+    profileCancel: "Cancel",
+    profileSaveBtn: "Save Changes",
+    profileSaved: "Profile saved",
+    profileReset: "Profile reset. Reloading...",
+    profileName: "Name",
+    profileNamePlaceholder: "Enter your name",
+    profileRole: "Role",
+    profileLanguage: "Language",
+    profileState: "State",
+    profileDistrict: "District",
+    profileDistrictPlaceholder: "Enter your district",
+    profileAge: "Age Group",
+    profileGender: "Gender",
+    profileNotSet: "Not set",
+    profileMale: "Male",
+    profileFemale: "Female",
+    profileOther: "Other",
+    profileActions: "Actions",
+    profileResetOnboarding: "Reset Onboarding",
+
+    // Voice
+    voiceListening: "Listening...",
+    voiceModeOn: "Voice Mode ON",
+    voiceModeOff: "Voice Mode OFF",
+
+    // Home
+    homeSubtitle: "Your personalized rural assistant",
   },
   hi: {
     appTitle: "ग्रामीण सहायक",
