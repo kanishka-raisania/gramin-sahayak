@@ -29,9 +29,8 @@ const BulletinBoard = () => {
 
   const loadPage = (p: number, cat: CategoryFilter) => {
     setLoading(true);
-    // Simulate slight network feel
     setTimeout(() => {
-      const result = fetchNewsPaginated(p, ITEMS_PER_PAGE, cat);
+      const result = fetchNewsPaginated(p, ITEMS_PER_PAGE, cat, profile?.role);
       setNews(result.items);
       setTotal(result.total);
       setLoading(false);
