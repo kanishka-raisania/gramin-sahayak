@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      bulletin_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          is_expiring: boolean
+          last_fetched_at: string | null
+          publish_date: string
+          rss_guid: string | null
+          source: string
+          source_url: string | null
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          is_expiring?: boolean
+          last_fetched_at?: string | null
+          publish_date?: string
+          rss_guid?: string | null
+          source?: string
+          source_url?: string | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          is_expiring?: boolean
+          last_fetched_at?: string | null
+          publish_date?: string
+          rss_guid?: string | null
+          source?: string
+          source_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       chat_logs: {
         Row: {
           ai_response: string
@@ -44,6 +89,54 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          sender: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          sender: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          sender?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
+      chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          session_id: string
+          user_role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          session_id: string
+          user_role?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          session_id?: string
+          user_role?: string
+        }
+        Relationships: []
+      }
       fake_news_checks: {
         Row: {
           checked_at: string
@@ -71,6 +164,51 @@ export type Database = {
           news_text?: string
           session_id?: string
           verdict?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          age_group: string | null
+          created_at: string
+          district: string | null
+          gender: string | null
+          id: string
+          interaction_tags: string[] | null
+          language: string
+          name: string | null
+          role: string
+          session_id: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          age_group?: string | null
+          created_at?: string
+          district?: string | null
+          gender?: string | null
+          id?: string
+          interaction_tags?: string[] | null
+          language?: string
+          name?: string | null
+          role?: string
+          session_id: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age_group?: string | null
+          created_at?: string
+          district?: string | null
+          gender?: string | null
+          id?: string
+          interaction_tags?: string[] | null
+          language?: string
+          name?: string | null
+          role?: string
+          session_id?: string
+          state?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

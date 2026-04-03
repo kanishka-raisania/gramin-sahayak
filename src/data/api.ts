@@ -177,12 +177,29 @@ export function fetchNews(): NewsItem[] {
   return allNewsData.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 }
 
-// Paginated fetch — returns page slice + total count
-export function fetchNewsPaginated(page: number, perPage: number, category?: string): { items: NewsItem[]; total: number } {
+// Paginated fetch with optional role-based priority sorting
+export function fetchNewsPaginated(page: number, perPage: number, category?: string, userRole?: string): { items: NewsItem[]; total: number } {
   let items = fetchNews();
   if (category && category !== "All") {
     items = items.filter((n) => n.category === category);
   }
+
+  // Adaptive sorting: prioritize items matching user role
+  if (userRole && (!category || category === "All")) {
+    const roleCategoryMap: Record<string, string> = {
+      farmer: "Farmer",
+      worker: "Worker",
+      citizen: "General",
+    };
+    const preferredCategory = roleCategoryMap[userRole];
+    if (preferredCategory) {
+      items = [
+        ...items.filter((n) => n.category === preferredCategory),
+        ...items.filter((n) => n.category !== preferredCategory),
+      ];
+    }
+  }
+
   const total = items.length;
   const start = (page - 1) * perPage;
   return { items: items.slice(start, start + perPage), total };

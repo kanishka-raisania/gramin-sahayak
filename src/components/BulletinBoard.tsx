@@ -9,6 +9,7 @@ import SchemeDetailModal from "./SchemeDetailModal";
 import { BulletinSkeletonGrid } from "./BulletinSkeleton";
 import { Newspaper, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 import type { TranslationKey } from "@/i18n/translations";
 
 type CategoryFilter = "All" | "Farmer" | "Worker" | "General";
@@ -22,14 +23,14 @@ const BulletinBoard = () => {
   const [page, setPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
   const { t } = useLanguage();
+  const { profile } = useUserProfile();
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   const loadPage = (p: number, cat: CategoryFilter) => {
     setLoading(true);
-    // Simulate slight network feel
     setTimeout(() => {
-      const result = fetchNewsPaginated(p, ITEMS_PER_PAGE, cat);
+      const result = fetchNewsPaginated(p, ITEMS_PER_PAGE, cat, profile?.role);
       setNews(result.items);
       setTotal(result.total);
       setLoading(false);

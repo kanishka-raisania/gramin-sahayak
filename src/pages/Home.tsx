@@ -1,14 +1,27 @@
 /**
- * Home — Main landing page with bulletin board and quick action cards
+ * Home — Main landing page with personalized greeting, bulletin board, and quick actions
  */
 import { Link } from "react-router-dom";
 import { MessageCircle, ShieldCheck, Sprout, Scale } from "lucide-react";
 import BulletinBoard from "@/components/BulletinBoard";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 import type { TranslationKey } from "@/i18n/translations";
 
+const greetings: Record<string, string> = {
+  en: "Welcome back",
+  hi: "नमस्ते",
+  pa: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ",
+  bn: "নমস্কার",
+  ta: "வணக்கம்",
+};
+
 const Home = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { profile } = useUserProfile();
+
+  const greeting = greetings[language] || greetings.en;
+  const userName = profile?.name;
 
   const quickActions = [
     {
@@ -48,6 +61,16 @@ const Home = () => {
   return (
     <div className="min-h-screen pb-24">
       <main className="container mx-auto px-4 py-8 space-y-10">
+        {/* Personalized greeting */}
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-extrabold text-foreground">
+            {greeting}{userName ? `, ${userName} ji` : ""} 👋
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t("homeSubtitle" as TranslationKey)}
+          </p>
+        </div>
+
         {/* Bulletin Board */}
         <BulletinBoard />
 
