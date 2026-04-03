@@ -6,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Intent detection based on keywords
 function detectIntent(message: string): string {
   const lower = message.toLowerCase();
   if (lower.match(/wage|salary|pay|मजदूरी|वेतन|तनख्वाह/)) return "worker";
@@ -21,7 +20,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { message, session_id, language = "en", history = [] } = await req.json();
+    const { message, session_id, language = "en", history = [], user_context } = await req.json();
 
     if (!message?.trim()) {
       return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -43,7 +42,32 @@ serve(async (req) => {
     };
     const langInstruction = langMap[language] || langMap.en;
 
-    const systemPrompt = `You are Gramin Sahayak (ग्रामीण सहायक), a rural Indian digital assistant.
+    // Build personalized context from user profile
+    let personalizationContext = "";
+    if (user_context) {
+      const parts: string[] = [];
+      if (user_context.name) parts.push(`User's name is ${user_context.name}`);
+      if (user_context.role) parts.push(`User is a ${user_context.role}`);
+      if (user_context.state) parts.push(`User lives in ${user_context.state}, India`);
+      if (user_context.age_group) parts.push(`User's age group: ${user_context.age_group}`);
+      if (user_context.gender) parts.push(`User's gender: ${user_context.gender}`);
+      
+      if (parts.length > 0) {
+        personalizationContext = `\n\nUser Profile:\n${parts.join("\n")}
+
+IMPORTANT PERSONALIZATION RULES:
+- Address the user by name if known (use "ji" suffix for respect)
+- Prioritize schemes and information relevant to their role (${user_context.role || "citizen"})
+- If they are a farmer, focus on agriculture schemes, crop insurance, KCC, soil health
+- If they are a worker, focus on labor rights, minimum wage, e-Shram, MGNREGA
+- If they live in a specific state, mention state-specific schemes and local offices
+- If they are female, also mention women-specific schemes like Ujjwala, Mahila Samman
+- If they are 40+, use simpler language and mention pension schemes
+- Make responses feel personally curated, not generic`;
+      }
+    }
+
+    const systemPrompt = `You are Gramin Sahayak (ग्रामीण सहायक), a personalized rural Indian digital assistant.
 
 Your role:
 - Help farmers, workers, and rural citizens understand government schemes
@@ -53,8 +77,10 @@ Your role:
 - Be warm, respectful, and encouraging
 - Use examples with rupee amounts when possible
 - Keep answers under 150 words
+- Use bullet points and bold text for clarity
 
 ${langInstruction}
+${personalizationContext}
 
 Important government helplines:
 - Kisan Call Centre: 1800-180-1551
@@ -63,7 +89,6 @@ Important government helplines:
 - Ayushman Bharat: 14555
 - MGNREGA: 1800-345-22444`;
 
-    // Build conversation with last few messages for context
     const contextMessages = history.slice(-5).map((h: { role: string; text: string }) => ({
       role: h.role === "user" ? "user" : "assistant",
       content: h.text,
@@ -102,11 +127,6 @@ Important government helplines:
       throw new Error("AI gateway error");
     }
 
-    // Save to database in background (non-blocking)
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Stream response back
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });

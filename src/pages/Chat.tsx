@@ -1,15 +1,15 @@
 /**
- * Chat — AI-powered chatbot with streaming responses
- * Features: bot avatar, typing indicator, formatted messages, skeleton loader
+ * Chat — AI chatbot with voice input/output, streaming, personalized context
  */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Loader2, Bot } from "lucide-react";
+import { Send, Loader2, Bot, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useUserProfile } from "@/contexts/UserProfileContext";
+import { useVoice } from "@/hooks/useVoice";
 import type { TranslationKey } from "@/i18n/translations";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import GraminLogo from "@/components/GraminLogo";
 import ChatMessageBubble from "@/components/ChatMessageBubble";
 
 interface Message {
@@ -17,7 +17,6 @@ interface Message {
   sender: "user" | "bot";
 }
 
-/** Persistent session ID */
 function getSessionId(): string {
   let id = localStorage.getItem("gs-session-id");
   if (!id) {
@@ -29,22 +28,43 @@ function getSessionId(): string {
 
 const Chat = () => {
   const { t, language } = useLanguage();
+  const { profile } = useUserProfile();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
-    { text: t("chatGreeting"), sender: "bot" },
+    { text: getPersonalizedGreeting(), sender: "bot" },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef(getSessionId());
 
+  // Voice hook
+  const voice = useVoice({
+    language,
+    onTranscript: (text) => {
+      setInput(text);
+      // Auto-send after voice input
+      setTimeout(() => handleSend(text), 300);
+    },
+  });
+
+  function getPersonalizedGreeting(): string {
+    if (!profile?.name) return t("chatGreeting");
+    const greetMap: Record<string, string> = {
+      en: `Hello ${profile.name} ji! I am your Gramin Sahayak. How can I help you today?`,
+      hi: `नमस्ते ${profile.name} जी! मैं आपका ग्रामीण सहायक हूँ। आज मैं आपकी कैसे मदद कर सकता हूँ?`,
+      pa: `ਸਤ ਸ੍ਰੀ ਅਕਾਲ ${profile.name} ਜੀ! ਮੈਂ ਤੁਹਾਡਾ ਗ੍ਰਾਮੀਣ ਸਹਾਇਕ ਹਾਂ।`,
+      bn: `নমস্কার ${profile.name} জি! আমি আপনার গ্রামীণ সহায়ক।`,
+      ta: `வணக்கம் ${profile.name} ஜி! நான் உங்கள் கிராமிய உதவியாளர்.`,
+    };
+    return greetMap[language] || greetMap.en;
+  }
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -54,6 +74,9 @@ const Chat = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
+
+    // Stop any ongoing speech
+    voice.stopSpeaking();
 
     const history = messages.slice(-10).map((m) => ({
       role: m.sender === "user" ? "user" : "assistant",
@@ -73,6 +96,13 @@ const Chat = () => {
           session_id: sessionId.current,
           language,
           history,
+          user_context: profile ? {
+            role: profile.role,
+            state: profile.state,
+            age_group: profile.age_group,
+            gender: profile.gender,
+            name: profile.name,
+          } : undefined,
         }),
       });
 
@@ -99,14 +129,11 @@ const Chat = () => {
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
           textBuffer = textBuffer.slice(newlineIndex + 1);
-
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (line.startsWith(":") || line.trim() === "") continue;
           if (!line.startsWith("data: ")) continue;
-
           const jsonStr = line.slice(6).trim();
           if (jsonStr === "[DONE]") { streamDone = true; break; }
-
           try {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
@@ -154,12 +181,16 @@ const Chat = () => {
       if (!assistantText) {
         setMessages((prev) => {
           const updated = [...prev];
-          updated[updated.length - 1] = {
-            text: t("chatFallback" as TranslationKey),
-            sender: "bot",
-          };
+          updated[updated.length - 1] = { text: t("chatFallback" as TranslationKey), sender: "bot" };
           return updated;
         });
+      }
+
+      // Voice output — speak the response
+      if (assistantText && voice.voiceEnabled) {
+        // Strip markdown for speech
+        const cleanText = assistantText.replace(/\*\*/g, "").replace(/[•\-]\s/g, "").slice(0, 500);
+        voice.speak(cleanText);
       }
     } catch (e) {
       console.error("Chat error:", e);
@@ -178,7 +209,6 @@ const Chat = () => {
     }
   };
 
-  /** Quick action queries per language */
   const quickQueries: Record<string, Record<string, string>> = {
     quickWage: { en: "Tell me about wages", hi: "मजदूरी के बारे में बताएं", pa: "ਮਜ਼ਦੂਰੀ ਬਾਰੇ ਦੱਸੋ", bn: "মজুরি সম্পর্কে বলুন", ta: "கூலி பற்றி சொல்லுங்கள்" },
     quickFarming: { en: "I need farming help", hi: "खेती में मदद चाहिए", pa: "ਖੇਤੀ ਵਿੱਚ ਮਦਦ ਚਾਹੀਦੀ", bn: "চাষে সাহায্য চাই", ta: "விவசாய உதவி தேவை" },
@@ -193,7 +223,6 @@ const Chat = () => {
     { labelKey: "quickLegal" as const, query: quickQueries.quickLegal[language] || quickQueries.quickLegal.en },
   ];
 
-  // Get bot avatar from session (same as ChatMessageBubble)
   const botAvatarSrc = (() => {
     let idx = sessionStorage.getItem("gs-avatar-idx");
     if (!idx) {
@@ -214,21 +243,38 @@ const Chat = () => {
     <div className="flex min-h-screen flex-col pb-20">
       {/* Header */}
       <div className="bg-primary px-4 py-3 text-primary-foreground">
-        <div className="container mx-auto flex items-center gap-3">
-          <Avatar className="h-10 w-10 border-2 border-primary-foreground/30">
-            <AvatarImage src={botAvatarSrc} alt="Assistant" />
-            <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
-              <Bot className="h-5 w-5" />
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h2 className="text-lg font-bold">{t("chatTitle")}</h2>
-            <p className="text-xs opacity-80">{t("chatSubtitle")}</p>
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border-2 border-primary-foreground/30">
+              <AvatarImage src={botAvatarSrc} alt="Assistant" />
+              <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
+                <Bot className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="text-lg font-bold">{t("chatTitle")}</h2>
+              <p className="text-xs opacity-80">{t("chatSubtitle")}</p>
+            </div>
           </div>
+
+          {/* Voice mode toggle */}
+          {voice.hasSynthesis && (
+            <button
+              onClick={voice.toggleVoiceMode}
+              className={`rounded-full p-2.5 transition-colors ${
+                voice.voiceEnabled
+                  ? "bg-primary-foreground/30 text-primary-foreground"
+                  : "bg-primary-foreground/10 text-primary-foreground/60"
+              }`}
+              title={voice.voiceEnabled ? "Voice ON" : "Voice OFF"}
+            >
+              {voice.voiceEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Quick actions — large cards */}
+      {/* Quick actions */}
       <div className="container mx-auto px-4 pt-4 pb-2">
         <div className="flex gap-2 overflow-x-auto">
           {quickActions.map(({ labelKey, query }) => (
@@ -273,15 +319,31 @@ const Chat = () => {
         </div>
       </ScrollArea>
 
-      {/* Input */}
+      {/* Input with voice */}
       <div className="fixed bottom-16 left-0 right-0 border-t border-border bg-card px-4 py-3">
         <div className="container mx-auto flex items-center gap-2">
+          {/* Mic button */}
+          {voice.hasRecognition && (
+            <button
+              onClick={voice.isListening ? voice.stopListening : voice.startListening}
+              disabled={isLoading}
+              className={`rounded-full p-3 transition-all ${
+                voice.isListening
+                  ? "bg-destructive text-destructive-foreground animate-pulse shadow-lg"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+              title={voice.isListening ? "Stop listening" : "Speak"}
+            >
+              {voice.isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </button>
+          )}
+
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={t("chatPlaceholder")}
+            placeholder={voice.isListening ? t("voiceListening" as TranslationKey) : t("chatPlaceholder")}
             disabled={isLoading}
             className="flex-1 rounded-full border border-input bg-background px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
           />
@@ -293,6 +355,20 @@ const Chat = () => {
             {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
           </button>
         </div>
+
+        {/* Listening indicator */}
+        {voice.isListening && (
+          <div className="mt-2 flex items-center justify-center gap-2 text-sm text-destructive font-semibold animate-fade-in">
+            <div className="flex gap-0.5">
+              <span className="h-3 w-1 rounded-full bg-destructive animate-pulse" style={{ animationDelay: "0ms" }} />
+              <span className="h-4 w-1 rounded-full bg-destructive animate-pulse" style={{ animationDelay: "100ms" }} />
+              <span className="h-2 w-1 rounded-full bg-destructive animate-pulse" style={{ animationDelay: "200ms" }} />
+              <span className="h-5 w-1 rounded-full bg-destructive animate-pulse" style={{ animationDelay: "300ms" }} />
+              <span className="h-3 w-1 rounded-full bg-destructive animate-pulse" style={{ animationDelay: "400ms" }} />
+            </div>
+            {t("voiceListening" as TranslationKey)}
+          </div>
+        )}
       </div>
     </div>
   );
