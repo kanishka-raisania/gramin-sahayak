@@ -23,6 +23,7 @@ const BulletinBoard = () => {
   const [page, setPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
   const { t } = useLanguage();
+  const { profile } = useUserProfile();
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
