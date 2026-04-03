@@ -167,6 +167,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          age_group: string | null
+          created_at: string
+          district: string | null
+          gender: string | null
+          id: string
+          interaction_tags: string[] | null
+          language: string
+          name: string | null
+          role: string
+          session_id: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          age_group?: string | null
+          created_at?: string
+          district?: string | null
+          gender?: string | null
+          id?: string
+          interaction_tags?: string[] | null
+          language?: string
+          name?: string | null
+          role?: string
+          session_id: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age_group?: string | null
+          created_at?: string
+          district?: string | null
+          gender?: string | null
+          id?: string
+          interaction_tags?: string[] | null
+          language?: string
+          name?: string | null
+          role?: string
+          session_id?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
