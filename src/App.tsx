@@ -20,6 +20,13 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Apply stored theme on load
+(() => {
+  const theme = localStorage.getItem("gs-theme");
+  if (theme === "pink") document.documentElement.classList.add("theme-pink");
+  if (theme === "highcontrast") document.documentElement.classList.add("theme-highcontrast");
+})();
+
 const AppContent = () => {
   const { isFirstLaunch } = useLanguage();
   const { isOnboarded } = useUserProfile();
