@@ -1,23 +1,17 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getNewsById } from "@/services/newsService";
 import { getCategoryFallbackImage } from "@/data/api";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 import type { TranslationKey } from "@/i18n/translations";
 import {
-  ArrowLeft,
-  CheckCircle2,
-  User,
-  FileText,
-  ArrowRight,
-  ExternalLink,
-  Calendar,
-  Building2,
-  ImageOff,
-  Sprout,
-  HardHat,
-  Globe,
+  ArrowLeft, CheckCircle2, User, FileText, ExternalLink,
+  Calendar, Building2, ImageOff, Sprout, HardHat, Globe,
+  ClipboardCheck, MessageCircle,
 } from "lucide-react";
-import { useState } from "react";
+import EligibilityChecker from "@/components/EligibilityChecker";
+import WhereToGo from "@/components/WhereToGo";
 
 const categoryConfig = {
   Farmer: { icon: Sprout, colorClass: "bg-farmer text-primary-foreground" },
