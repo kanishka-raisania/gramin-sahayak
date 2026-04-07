@@ -278,6 +278,64 @@ export const translations = {
     voiceModeOn: "Voice Mode ON",
     voiceModeOff: "Voice Mode OFF",
 
+    // Verify — new
+    verifyPasteBtn: "Paste from WhatsApp",
+    verifyPasteDesc: "Paste a forwarded message to check",
+    verifySpeakBtn: "Speak your message",
+    verifySpeakDesc: "Use voice to describe the news",
+    verifySampleBtn: "Try Sample Message",
+    verifySampleDesc: "See how fact-checking works instantly",
+    verifyForwarded: "Forwarded message",
+    verifyShareWhatsApp: "Share on WhatsApp",
+
+    // Eligibility checker
+    eligTitle: "Help Me Apply",
+    eligStep: "Step",
+    eligResultTitle: "Eligibility Result",
+    eligEligible: "You are eligible for this scheme!",
+    eligEligibleDesc: "You have all the required documents. Visit the nearest office to apply.",
+    eligNotEligible: "You need some documents first",
+    eligNeedDocs: "Please arrange these before applying:",
+    eligYes: "Yes",
+    eligNo: "No",
+    eligClose: "Close",
+    eligQ_aadhaar: "Do you have an Aadhaar card?",
+    eligQ_bankAccount: "Do you have a bank account?",
+    eligQ_landRecords: "Do you have land ownership documents?",
+    eligQ_rationCard: "Do you have a ration card?",
+    eligQ_photo: "Do you have a passport-size photo?",
+    eligQ_mobile: "Do you have a mobile phone?",
+    eligQ_employmentProof: "Do you have proof of employment?",
+    eligDoc_aadhaar: "Aadhaar Card",
+    eligDoc_bankAccount: "Bank Account",
+    eligDoc_landRecords: "Land Records / Documents",
+    eligDoc_rationCard: "Ration Card",
+    eligDoc_photo: "Passport-size Photo",
+    eligDoc_mobile: "Mobile Phone",
+    eligDoc_employmentProof: "Employment Proof",
+
+    // Scheme detail actions
+    helpMeApply: "Help Me Apply",
+    askAIAbout: "Ask AI",
+
+    // Where to go
+    whereTitle: "Where to Go",
+    whereCSC: "Common Service Centre (CSC)",
+    whereCSCDesc: "Find your nearest CSC at csc.gov.in or ask at your panchayat office",
+    whereGovOffice: "Government Office",
+    whereGovOfficeDesc: "Visit your Block/Tehsil/District office for direct assistance",
+    whereHelpline: "Helpline Numbers",
+    whereHelplineDesc: "PM-KISAN: 155261 | MGNREGA: 1800-111-555 | Ayushman: 14555",
+    whereOnline: "Apply Online",
+    whereOnlineDesc: "Use the official government website linked above",
+
+    // Accessibility
+    accessVoicePref: "Voice Preference",
+    accessThemePref: "Theme",
+    themeDefault: "Green",
+    themePink: "Pink",
+    themeHighContrast: "High Contrast",
+
     // Home
     homeSubtitle: "Your personalized rural assistant",
   },
