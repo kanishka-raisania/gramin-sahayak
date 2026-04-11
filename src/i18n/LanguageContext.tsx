@@ -1,6 +1,15 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { translations, type Language, type TranslationKey } from "./translations";
-import { extraTranslationsEn } from "@/data/extraTranslations";
+import { extraTranslationsEn, extraTranslationsHi, extraTranslationsPa, extraTranslationsBn, extraTranslationsTa } from "@/data/extraTranslations";
+
+/** Language-specific extra translation maps */
+const extraTranslationsMap: Record<Language, Record<string, string>> = {
+  en: extraTranslationsEn,
+  hi: extraTranslationsHi,
+  pa: extraTranslationsPa,
+  bn: extraTranslationsBn,
+  ta: extraTranslationsTa,
+};
 
 interface LanguageContextType {
   language: Language;
