@@ -30,8 +30,6 @@ interface Props {
 }
 
 const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) => {
-  // Helper: skip translation for dynamic (RSS) items, raw text is already in the field
-  const tx = (key: string) => isDynamic ? key : t(key as TranslationKey);
   const { t, language } = useLanguage();
   const { profile } = useUserProfile();
   const navigate = useNavigate();
@@ -39,6 +37,9 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
   const [showEligibility, setShowEligibility] = useState(false);
 
   if (!item) return null;
+
+  // Helper: skip translation for dynamic (RSS) items — raw text already in the field
+  const tx = (key: string) => isDynamic ? key : t(key as TranslationKey);
 
   const config = categoryConfig[item.category];
   const Icon = config.icon;
