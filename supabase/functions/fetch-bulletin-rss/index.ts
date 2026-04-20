@@ -14,14 +14,18 @@ interface FeedConfig {
   defaultCategory: "Farmer" | "Worker" | "General";
 }
 
-// Public Indian government RSS feeds (no auth required)
+// Public Indian RSS feeds — PIB requires browser UA
 const FEEDS: FeedConfig[] = [
   { url: "https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3", source: "Press Information Bureau", defaultCategory: "General" },
   { url: "https://pib.gov.in/RssMain.aspx?ModId=8&Lang=1&Regid=3", source: "Ministry of Agriculture", defaultCategory: "Farmer" },
   { url: "https://pib.gov.in/RssMain.aspx?ModId=22&Lang=1&Regid=3", source: "Ministry of Labour", defaultCategory: "Worker" },
   { url: "https://pib.gov.in/RssMain.aspx?ModId=18&Lang=1&Regid=3", source: "Ministry of Health", defaultCategory: "General" },
   { url: "https://pib.gov.in/RssMain.aspx?ModId=29&Lang=1&Regid=3", source: "Ministry of Rural Development", defaultCategory: "General" },
+  { url: "https://www.thehindu.com/news/national/feeder/default.rss", source: "The Hindu - National", defaultCategory: "General" },
+  { url: "https://www.thehindu.com/business/agri-business/feeder/default.rss", source: "The Hindu - Agri Business", defaultCategory: "Farmer" },
 ];
+
+const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 // Lightweight category classifier from keywords in title/description
 function classify(text: string, fallback: "Farmer" | "Worker" | "General"): "Farmer" | "Worker" | "General" {
@@ -62,7 +66,14 @@ function parseRss(xml: string, feed: FeedConfig) {
 
 async function fetchFeedSafe(feed: FeedConfig, signal: AbortSignal) {
   try {
-    const resp = await fetch(feed.url, { signal, headers: { "User-Agent": "GraminSahayakBot/1.0" } });
+    const resp = await fetch(feed.url, {
+      signal,
+      redirect: "follow",
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+      },
+    });
     if (!resp.ok) {
       console.log(`Feed ${feed.url} returned ${resp.status}`);
       return [];
