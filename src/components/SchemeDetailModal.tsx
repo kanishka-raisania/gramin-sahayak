@@ -26,9 +26,12 @@ interface Props {
   item: NewsItem | null;
   open: boolean;
   onClose: () => void;
+  isDynamic?: boolean;
 }
 
-const SchemeDetailModal = ({ item, open, onClose }: Props) => {
+const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) => {
+  // Helper: skip translation for dynamic (RSS) items, raw text is already in the field
+  const tx = (key: string) => isDynamic ? key : t(key as TranslationKey);
   const { t, language } = useLanguage();
   const { profile } = useUserProfile();
   const navigate = useNavigate();
