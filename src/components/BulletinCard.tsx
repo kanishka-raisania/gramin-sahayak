@@ -1,10 +1,9 @@
 /**
  * BulletinCard — Scannable card for government scheme updates
- * Shows title, one benefit line, source, and read more CTA
- * Supports "New" and "Expiring Soon" badges
+ * Supports both static (translation-keyed) and dynamic (raw text from RSS) items
  */
 import { type NewsItem, getCategoryFallbackImage } from "@/data/api";
-import { Sprout, HardHat, Globe, Building2, ArrowRight, Clock, Sparkles } from "lucide-react";
+import { Sprout, HardHat, Globe, Building2, ArrowRight, Clock, Sparkles, Radio } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import LazyImage from "./LazyImage";
@@ -19,21 +18,30 @@ interface BulletinCardProps {
   item: NewsItem;
   index: number;
   onClick: () => void;
+  /** When true, title/desc/source are raw strings (RSS) — skip translation lookup. */
+  isDynamic?: boolean;
 }
 
-const BulletinCard = ({ item, index, onClick }: BulletinCardProps) => {
+const BulletinCard = ({ item, index, onClick, isDynamic = false }: BulletinCardProps) => {
   const config = categoryConfig[item.category];
   const Icon = config.icon;
   const { t } = useLanguage();
 
   const fallbackImg = getCategoryFallbackImage(item.category);
 
+  // Resolve text — dynamic items already have raw strings stored in the *Key fields
+  const title = isDynamic ? item.titleKey : t(item.titleKey as TranslationKey);
+  const sourceText = isDynamic ? item.source : t(item.sourceKey as TranslationKey);
+  const benefitText = item.benefitsKeys[0]
+    ? (isDynamic ? item.benefitsKeys[0] : t(item.benefitsKeys[0] as TranslationKey))
+    : "";
+
   // Determine badges based on publishedAt
   const daysSincePublished = Math.floor(
     (Date.now() - new Date(item.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
   );
   const isNew = daysSincePublished <= 7;
-  const isExpiring = daysSincePublished >= 20;
+  const isExpiring = !isDynamic && daysSincePublished >= 20;
 
   return (
     <article
@@ -43,14 +51,14 @@ const BulletinCard = ({ item, index, onClick }: BulletinCardProps) => {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onClick()}
-      aria-label={t(item.titleKey as TranslationKey)}
+      aria-label={title}
     >
       {/* Image */}
       <div className="relative h-[120px] bg-muted overflow-hidden">
         <LazyImage
           src={item.imageUrl}
           fallbackSrc={fallbackImg || undefined}
-          alt={t(item.titleKey as TranslationKey)}
+          alt={title}
           className="group-hover:scale-105 transition-transform duration-300"
         />
 
@@ -64,7 +72,13 @@ const BulletinCard = ({ item, index, onClick }: BulletinCardProps) => {
 
         {/* Status badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {isNew && (
+          {isDynamic && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/90 px-2 py-0.5 text-[10px] font-bold text-destructive-foreground shadow-md">
+              <Radio className="h-2.5 w-2.5 animate-pulse" />
+              LIVE
+            </span>
+          )}
+          {isNew && !isDynamic && (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-md">
               <Sparkles className="h-2.5 w-2.5" />
               {t("badgeNew" as TranslationKey)}
@@ -82,20 +96,20 @@ const BulletinCard = ({ item, index, onClick }: BulletinCardProps) => {
       {/* Content */}
       <div className="p-4 space-y-2">
         <h3 className="text-base font-bold text-card-foreground leading-tight line-clamp-2 min-h-[2.75rem]">
-          {t(item.titleKey as TranslationKey)}
+          {title}
         </h3>
 
         {/* One benefit line */}
-        {item.benefitsKeys[0] && (
+        {benefitText && (
           <p className="text-sm text-primary font-medium line-clamp-1">
-            {t(item.benefitsKeys[0] as TranslationKey)}
+            {benefitText}
           </p>
         )}
 
         {/* Source */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Building2 className="h-3.5 w-3.5" />
-          <span className="truncate">{t(item.sourceKey as TranslationKey)}</span>
+          <span className="truncate">{sourceText}</span>
         </div>
 
         {/* Read More CTA */}

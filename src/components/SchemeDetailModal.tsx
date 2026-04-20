@@ -26,9 +26,10 @@ interface Props {
   item: NewsItem | null;
   open: boolean;
   onClose: () => void;
+  isDynamic?: boolean;
 }
 
-const SchemeDetailModal = ({ item, open, onClose }: Props) => {
+const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) => {
   const { t, language } = useLanguage();
   const { profile } = useUserProfile();
   const navigate = useNavigate();
@@ -36,6 +37,9 @@ const SchemeDetailModal = ({ item, open, onClose }: Props) => {
   const [showEligibility, setShowEligibility] = useState(false);
 
   if (!item) return null;
+
+  // Helper: skip translation for dynamic (RSS) items — raw text already in the field
+  const tx = (key: string) => isDynamic ? key : t(key as TranslationKey);
 
   const config = categoryConfig[item.category];
   const Icon = config.icon;
@@ -48,8 +52,8 @@ const SchemeDetailModal = ({ item, open, onClose }: Props) => {
   const handleAskAI = () => {
     const location = profile?.state || "India";
     const role = profile?.role || "citizen";
-    const prompt = `Explain the scheme "${t(item.titleKey as TranslationKey)}" for a ${role} in ${location} in simple language. What are the benefits and how to apply?`;
-    // Store prompt for chatbot to pick up
+    const titleText = tx(item.titleKey);
+    const prompt = `Explain the scheme "${titleText}" for a ${role} in ${location} in simple language. What are the benefits and how to apply?`;
     sessionStorage.setItem("gs-ai-prompt", prompt);
     onClose();
     navigate("/chat");
@@ -69,7 +73,7 @@ const SchemeDetailModal = ({ item, open, onClose }: Props) => {
           {keys.map((key, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-card-foreground leading-relaxed">
               <span className="mt-0.5 shrink-0 text-primary">•</span>
-              <span>{t(key as TranslationKey)}</span>
+              <span>{tx(key)}</span>
             </li>
           ))}
         </ul>
@@ -87,7 +91,7 @@ const SchemeDetailModal = ({ item, open, onClose }: Props) => {
               <ImageOff className="h-12 w-12 text-muted-foreground/40" />
             </div>
           ) : (
-            <img src={imageUrl} alt={t(item.titleKey as TranslationKey)} className="w-full h-full object-cover" loading="lazy" onError={() => setImgError(true)} />
+            <img src={imageUrl} alt={tx(item.titleKey)} className="w-full h-full object-cover" loading="lazy" onError={() => setImgError(true)} />
           )}
           <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${config.colorClass} shadow-lg`}>
             <Icon className="h-3.5 w-3.5" />
@@ -98,19 +102,19 @@ const SchemeDetailModal = ({ item, open, onClose }: Props) => {
         <div className="p-5 space-y-4">
           <DialogHeader className="space-y-1 p-0">
             <DialogTitle className="text-xl font-extrabold text-foreground leading-tight">
-              {t(item.titleKey as TranslationKey)}
+              {tx(item.titleKey)}
             </DialogTitle>
           </DialogHeader>
 
           {/* Meta */}
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{formattedDate}</span>
-            <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{t(item.sourceKey as TranslationKey)}</span>
+            <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{isDynamic ? item.source : t(item.sourceKey as TranslationKey)}</span>
           </div>
 
           {/* Summary */}
           <div className="rounded-xl bg-primary/10 border border-primary/20 p-4">
-            <p className="text-base font-medium text-foreground leading-relaxed">{t(item.simpleSummaryKey as TranslationKey)}</p>
+            <p className="text-base font-medium text-foreground leading-relaxed">{tx(item.simpleSummaryKey)}</p>
           </div>
 
           {/* Action Buttons — Help Me Apply + Ask AI */}
@@ -136,7 +140,16 @@ const SchemeDetailModal = ({ item, open, onClose }: Props) => {
             <EligibilityChecker item={item} onClose={() => setShowEligibility(false)} />
           )}
 
-          {/* Sections */}
+          {/* For dynamic RSS items: show full description in a card */}
+          {isDynamic && item.descKey && (
+            <div className="rounded-xl p-4 bg-muted/50">
+              <h3 className="text-base font-bold text-foreground mb-2 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                {t("whyThisMatters" as TranslationKey)}
+              </h3>
+              <p className="text-sm text-card-foreground leading-relaxed">{item.descKey}</p>
+            </div>
+          )}
           <div className="space-y-3">
             {renderSection("benefitsTitle", <CheckCircle2 className="h-5 w-5 text-primary" />, item.benefitsKeys, "bg-muted/50")}
             {renderSection("eligibilityTitle", <User className="h-5 w-5 text-accent" />, item.eligibilityKeys, "bg-accent/10")}
