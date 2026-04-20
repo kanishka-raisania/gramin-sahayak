@@ -4,10 +4,10 @@
  * Supports "New" and "Expiring Soon" badges
  */
 import { type NewsItem, getCategoryFallbackImage } from "@/data/api";
-import { Sprout, HardHat, Globe, ImageOff, Building2, ArrowRight, Clock, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Sprout, HardHat, Globe, Building2, ArrowRight, Clock, Sparkles } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
+import LazyImage from "./LazyImage";
 
 const categoryConfig = {
   Farmer: { icon: Sprout, colorClass: "bg-farmer text-primary-foreground" },
@@ -24,10 +24,9 @@ interface BulletinCardProps {
 const BulletinCard = ({ item, index, onClick }: BulletinCardProps) => {
   const config = categoryConfig[item.category];
   const Icon = config.icon;
-  const [imgError, setImgError] = useState(false);
   const { t } = useLanguage();
 
-  const imageUrl = imgError ? getCategoryFallbackImage(item.category) : item.imageUrl;
+  const fallbackImg = getCategoryFallbackImage(item.category);
 
   // Determine badges based on publishedAt
   const daysSincePublished = Math.floor(
@@ -48,19 +47,12 @@ const BulletinCard = ({ item, index, onClick }: BulletinCardProps) => {
     >
       {/* Image */}
       <div className="relative h-[120px] bg-muted overflow-hidden">
-        {imgError && !getCategoryFallbackImage(item.category) ? (
-          <div className="flex items-center justify-center h-full">
-            <ImageOff className="h-8 w-8 text-muted-foreground/40" />
-          </div>
-        ) : (
-          <img
-            src={imageUrl}
-            alt={t(item.titleKey as TranslationKey)}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-            onError={() => setImgError(true)}
-          />
-        )}
+        <LazyImage
+          src={item.imageUrl}
+          fallbackSrc={fallbackImg || undefined}
+          alt={t(item.titleKey as TranslationKey)}
+          className="group-hover:scale-105 transition-transform duration-300"
+        />
 
         {/* Category badge */}
         <span
