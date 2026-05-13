@@ -181,8 +181,13 @@ export function useVoice({ language, onTranscript }: UseVoiceOptions) {
   const speakViaSarvam = useCallback(
     async (rawText: string): Promise<boolean> => {
       try {
+        // Read gender preference set by the user in their Profile page
+        const gender = (() => {
+          try { return localStorage.getItem("gs-voice-gender") || "female"; } catch { return "female"; }
+        })();
+
         const { data, error } = await supabase.functions.invoke("tts-sarvam", {
-          body: { text: rawText, language },
+          body: { text: rawText, language, gender },
         });
 
         if (error || !data?.audio) {

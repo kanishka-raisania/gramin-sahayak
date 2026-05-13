@@ -4,8 +4,8 @@
  * Keeps the SARVAM_API_KEY secret on the server.
  * Returns base64-encoded WAV audio that the browser plays directly.
  *
- * Request  : POST { text: string, language: string }
- * Response : { audio: string }  (base64 WAV)
+ * Request  : POST { text: string, language: string, gender?: "female"|"male" }
+ * Response : { audio: string, speaker: string }  (base64 WAV + which voice was used)
  *          | { error: string }  (on failure — browser falls back to browser TTS)
  *
  * Set SARVAM_API_KEY in your Supabase project → Settings → Edge Functions → Secrets
@@ -18,7 +18,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Sarvam language codes keyed by our app's language codes
+// Sarvam language codes keyed by our app language codes
 const LANG_MAP: Record<string, string> = {
   hi: "hi-IN",
   en: "en-IN",
@@ -27,22 +27,30 @@ const LANG_MAP: Record<string, string> = {
   pa: "pa-IN",
 };
 
-// Default speaker per language — Sarvam voices that sound natural
-const SPEAKER_MAP: Record<string, string> = {
-  "hi-IN": "meera",
-  "en-IN": "arjun",
-  "ta-IN": "pavithra",
-  "bn-IN": "amartya",
-  "pa-IN": "meera",   // fallback; Sarvam may add Punjabi voices later
+/**
+ * Best Sarvam AI voices per language and gender.
+ * All voices use the bulbul:v1 model.
+ *
+ * Hindi   — meera (F, warm & clear), arvind (M, natural)
+ * English — maya  (F, Indian accent), arjun  (M, Indian accent)
+ * Tamil   — pavithra (F, native Tamil), suresh (M, native Tamil)
+ * Bengali — anushka (F, native Bengali), amartya (M, native Bengali)
+ * Punjabi — meera (F, closest Hindi voice), amol (M, closest Hindi voice)
+ */
+const SPEAKERS: Record<string, { female: string; male: string }> = {
+  "hi-IN": { female: "meera",    male: "arvind"   },
+  "en-IN": { female: "maya",     male: "arjun"    },
+  "ta-IN": { female: "pavithra", male: "suresh"   },
+  "bn-IN": { female: "anushka",  male: "amartya"  },
+  "pa-IN": { female: "meera",    male: "amol"     },
 };
 
-/** Trim text to ~500 chars at a sentence boundary so Sarvam handles it cleanly. */
+/** Trim to ~500 chars at a sentence boundary so Sarvam handles it cleanly. */
 function trimToLimit(text: string, limit = 500): string {
   if (text.length <= limit) return text;
-  // Try to break at last sentence-ending punctuation before limit
   const truncated = text.slice(0, limit);
   const lastPunct = Math.max(
-    truncated.lastIndexOf("।"), // Hindi danda
+    truncated.lastIndexOf("।"),
     truncated.lastIndexOf("."),
     truncated.lastIndexOf("?"),
     truncated.lastIndexOf("!"),
@@ -58,14 +66,13 @@ serve(async (req) => {
   try {
     const apiKey = Deno.env.get("SARVAM_API_KEY");
     if (!apiKey) {
-      // Return a clear error so the client falls back to browser TTS
       return new Response(
         JSON.stringify({ error: "SARVAM_API_KEY not configured" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { text, language = "hi" } = await req.json();
+    const { text, language = "hi", gender = "female" } = await req.json();
     if (!text?.trim()) {
       return new Response(
         JSON.stringify({ error: "text is required" }),
@@ -73,8 +80,9 @@ serve(async (req) => {
       );
     }
 
-    const langCode = LANG_MAP[language] ?? "hi-IN";
-    const speaker  = SPEAKER_MAP[langCode] ?? "meera";
+    const langCode  = LANG_MAP[language] ?? "hi-IN";
+    const langVoices = SPEAKERS[langCode] ?? SPEAKERS["hi-IN"];
+    const speaker   = gender === "male" ? langVoices.male : langVoices.female;
     const cleanText = trimToLimit(text.trim());
 
     const sarvamRes = await fetch("https://api.sarvam.ai/text-to-speech", {
@@ -116,7 +124,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ audio }),
+      JSON.stringify({ audio, speaker }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
