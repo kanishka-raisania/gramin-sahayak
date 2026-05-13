@@ -11,7 +11,7 @@ import GraminLogo from "./GraminLogo";
 import { useToast } from "@/hooks/use-toast";
 
 const navItems: { path: string; labelKey: TranslationKey; icon: typeof Home }[] = [
-  { path: "/", labelKey: "navHome", icon: Home },
+  { path: "/home", labelKey: "navHome", icon: Home },
   { path: "/chat", labelKey: "navHelp", icon: MessageCircle },
   { path: "/verify", labelKey: "navCheck", icon: ShieldCheck },
   { path: "/profile", labelKey: "navProfile" as TranslationKey, icon: User },

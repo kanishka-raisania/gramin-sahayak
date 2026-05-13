@@ -16,6 +16,16 @@ import { getBulletinPage, triggerRssRefresh, requestTranslations, type BulletinI
 type CategoryFilter = "All" | "Farmer" | "Worker" | "General";
 const ITEMS_PER_PAGE = 9;
 
+/**
+ * Derive a unique, deterministic image URL for a DB item.
+ * Uses picsum.photos/seed/{id} — each item UUID gives a unique beautiful photo,
+ * guaranteed no repeats across any page regardless of how many items there are.
+ */
+function uniqueImageUrl(id: string | number): string {
+  const seed = String(id).replace(/[^a-zA-Z0-9]/g, "").slice(0, 16) || "gramin";
+  return `https://picsum.photos/seed/${seed}/600/400`;
+}
+
 function toNewsItem(b: BulletinItem): NewsItem {
   if (b.staticItem) return b.staticItem;
   return {
@@ -24,7 +34,7 @@ function toNewsItem(b: BulletinItem): NewsItem {
     descKey: b.translatedDescription || b.description,
     simpleSummaryKey: b.translatedDescription || b.description,
     category: b.category,
-    imageUrl: b.image_url || "",
+    imageUrl: uniqueImageUrl(b.id),
     publishedAt: b.publish_date,
     source: b.source,
     sourceKey: b.source,

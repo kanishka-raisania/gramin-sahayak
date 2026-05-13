@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { UserProfileProvider } from "@/contexts/UserProfileContext";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -10,8 +10,8 @@ import { useUserProfile } from "@/contexts/UserProfileContext";
 import Navbar from "@/components/Navbar";
 import LanguageSelector from "@/components/LanguageSelector";
 import OnboardingFlow from "@/components/OnboardingFlow";
-import Home from "./pages/Home";
 import Landing from "./pages/Landing";
+import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Verify from "./pages/Verify";
 import About from "./pages/About";
@@ -33,8 +33,14 @@ const AppContent = () => {
   const { isOnboarded } = useUserProfile();
   const location = useLocation();
 
-  if (location.pathname === "/") {
+  // Landing page — only for users who haven't onboarded yet
+  if (location.pathname === "/" && !isOnboarded && !isFirstLaunch) {
     return <Landing />;
+  }
+
+  // Onboarded users hitting "/" go straight to the home feed
+  if (location.pathname === "/" && isOnboarded) {
+    return <Navigate to="/home" replace />;
   }
 
   if (isFirstLaunch) {
