@@ -17,24 +17,88 @@ type CategoryFilter = "All" | "Farmer" | "Worker" | "General";
 const ITEMS_PER_PAGE = 9;
 
 /**
- * Derive a unique, deterministic image URL for a DB item.
- * Uses picsum.photos/seed/{id} — each item UUID gives a unique beautiful photo,
- * guaranteed no repeats across any page regardless of how many items there are.
+ * Maps topic keywords found in a news title to a relevant Unsplash photo.
+ * First matching keyword group wins. Falls back to category-based images.
  */
-function uniqueImageUrl(id: string | number): string {
-  const seed = String(id).replace(/[^a-zA-Z0-9]/g, "").slice(0, 16) || "gramin";
-  return `https://picsum.photos/seed/${seed}/600/400`;
+const TOPIC_IMAGES: { keywords: string[]; url: string }[] = [
+  // Livestock / Animals
+  { keywords: ["livestock", "cattle", "cow", "buffalo", "dairy", "milk", "poultry", "sheep", "goat", "pig", "animal husbandry", "vaccination", "vaccine", "pashu"],
+    url: "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=400&fit=crop" },
+  // Crops / Harvest
+  { keywords: ["paddy", "rice", "wheat", "crop", "harvest", "kharif", "rabi", "msp", "minimum support", "grain", "cereal", "sugarcane"],
+    url: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&h=400&fit=crop" },
+  // Soil / Fertilizer
+  { keywords: ["fertilizer", "fertiliser", "soil", "nutrient", "urea", "organic", "compost", "soil health"],
+    url: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600&h=400&fit=crop" },
+  // Irrigation / Water
+  { keywords: ["irrigation", "water", "dam", "canal", "flood", "drought", "jal", "river", "well", "borewell"],
+    url: "https://images.unsplash.com/photo-1560493676-04071185765e?w=600&h=400&fit=crop" },
+  // Fishery
+  { keywords: ["fishery", "fish", "aquaculture", "seafood", "fishermen", "matsya"],
+    url: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop" },
+  // Farm Machinery / Tractor
+  { keywords: ["tractor", "machinery", "equipment", "mechanization", "drone", "technology farm"],
+    url: "https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=600&h=400&fit=crop" },
+  // Labour / MGNREGA
+  { keywords: ["mgnrega", "nrega", "wage", "labour", "labor", "employment", "job card", "mazdoor", "rozgar", "worker"],
+    url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop" },
+  // Skills / Training
+  { keywords: ["skill", "training", "vocational", "apprentice", "pmkvy", "kaushal"],
+    url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop" },
+  // Health / Medical
+  { keywords: ["health", "hospital", "medical", "ayushman", "pmjay", "doctor", "medicine", "healthcare", "nursing", "clinic", "swasthya"],
+    url: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop" },
+  // Housing
+  { keywords: ["housing", "home", "house", "awas", "pmay", "shelter", "construction", "building", "makaan"],
+    url: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop" },
+  // Education / Scholarship
+  { keywords: ["education", "school", "scholarship", "student", "study", "college", "learning", "shiksha", "vidya"],
+    url: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&h=400&fit=crop" },
+  // Finance / Loan / Insurance
+  { keywords: ["loan", "credit", "bank", "finance", "mudra", "kcc", "kisan credit", "subsidy", "insurance", "fasal bima"],
+    url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop" },
+  // Food / Ration / PDS
+  { keywords: ["ration", "food", "pds", "grain distribution", "nutrition", "anaj", "ann", "mid day meal"],
+    url: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&h=400&fit=crop" },
+  // Women / Self Help Groups
+  { keywords: ["women", "mahila", "self help group", "shg", "ujjwala", "sakhi", "stree", "nari"],
+    url: "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?w=600&h=400&fit=crop" },
+  // Solar / Energy
+  { keywords: ["solar", "energy", "electricity", "power", "renewable", "pm kusum", "bijli"],
+    url: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=400&fit=crop" },
+  // Roads / Infrastructure
+  { keywords: ["road", "highway", "infrastructure", "pmgsy", "bridge", "transport", "sadak"],
+    url: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&h=400&fit=crop" },
+  // Digital / Technology
+  { keywords: ["digital", "internet", "online", "app", "technology", "cyber", "broadband"],
+    url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&h=400&fit=crop" },
+];
+
+const CATEGORY_FALLBACKS: Record<string, string> = {
+  Farmer:  "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&h=400&fit=crop",
+  Worker:  "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&h=400&fit=crop",
+  General: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=600&h=400&fit=crop",
+};
+
+/** Pick a relevant image by scanning the item title for topic keywords. */
+function getRelevantImage(title: string, category: string): string {
+  const lower = title.toLowerCase();
+  for (const { keywords, url } of TOPIC_IMAGES) {
+    if (keywords.some((kw) => lower.includes(kw))) return url;
+  }
+  return CATEGORY_FALLBACKS[category] || CATEGORY_FALLBACKS.General;
 }
 
 function toNewsItem(b: BulletinItem): NewsItem {
   if (b.staticItem) return b.staticItem;
+  const title = b.translatedTitle || b.title;
   return {
     id: typeof b.id === "string" ? Math.abs(b.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) : b.id,
-    titleKey: b.translatedTitle || b.title,
+    titleKey: title,
     descKey: b.translatedDescription || b.description,
     simpleSummaryKey: b.translatedDescription || b.description,
     category: b.category,
-    imageUrl: uniqueImageUrl(b.id),
+    imageUrl: getRelevantImage(title, b.category),
     publishedAt: b.publish_date,
     source: b.source,
     sourceKey: b.source,

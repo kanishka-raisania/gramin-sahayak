@@ -41,6 +41,9 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
   // Helper: skip translation for dynamic (RSS) items — raw text already in the field
   const tx = (key: string) => isDynamic ? key : t(key as TranslationKey);
 
+  // True only for static scheme items that have full eligibility/benefits data
+  const isScheme = !isDynamic && item.benefitsKeys.length > 0;
+
   const config = categoryConfig[item.category];
   const Icon = config.icon;
   const imageUrl = imgError ? getCategoryFallbackImage(item.category) : item.imageUrl;
@@ -117,15 +120,17 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
             <p className="text-base font-medium text-foreground leading-relaxed">{tx(item.simpleSummaryKey)}</p>
           </div>
 
-          {/* Action Buttons — Help Me Apply + Ask AI */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setShowEligibility(!showEligibility)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/30 py-3 text-sm font-bold text-primary hover:bg-primary/20 transition-colors active:scale-[0.98]"
-            >
-              <ClipboardCheck className="h-4 w-4" />
-              {t("helpMeApply" as TranslationKey)}
-            </button>
+          {/* Action Buttons — scheme items get eligibility checker, news items get Ask AI only */}
+          <div className={`grid gap-2 ${isScheme ? "grid-cols-2" : "grid-cols-1"}`}>
+            {isScheme && (
+              <button
+                onClick={() => setShowEligibility(!showEligibility)}
+                className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/30 py-3 text-sm font-bold text-primary hover:bg-primary/20 transition-colors active:scale-[0.98]"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+                {t("helpMeApply" as TranslationKey)}
+              </button>
+            )}
             <button
               onClick={handleAskAI}
               className="flex items-center justify-center gap-2 rounded-xl bg-accent/10 border border-accent/30 py-3 text-sm font-bold text-accent hover:bg-accent/20 transition-colors active:scale-[0.98]"
@@ -135,8 +140,8 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
             </button>
           </div>
 
-          {/* Eligibility Checker */}
-          {showEligibility && (
+          {/* Eligibility Checker — schemes only */}
+          {isScheme && showEligibility && (
             <EligibilityChecker item={item} onClose={() => setShowEligibility(false)} />
           )}
 
@@ -150,11 +155,14 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
               <p className="text-sm text-card-foreground leading-relaxed">{item.descKey}</p>
             </div>
           )}
-          <div className="space-y-3">
-            {renderSection("benefitsTitle", <CheckCircle2 className="h-5 w-5 text-primary" />, item.benefitsKeys, "bg-muted/50")}
-            {renderSection("eligibilityTitle", <User className="h-5 w-5 text-accent" />, item.eligibilityKeys, "bg-accent/10")}
-            {renderSection("howToApplyTitle", <FileText className="h-5 w-5 text-secondary" />, item.howToApplyKeys, "bg-secondary/10")}
-          </div>
+          {/* Benefits / Eligibility / How-to-apply — schemes only */}
+          {isScheme && (
+            <div className="space-y-3">
+              {renderSection("benefitsTitle", <CheckCircle2 className="h-5 w-5 text-primary" />, item.benefitsKeys, "bg-muted/50")}
+              {renderSection("eligibilityTitle", <User className="h-5 w-5 text-accent" />, item.eligibilityKeys, "bg-accent/10")}
+              {renderSection("howToApplyTitle", <FileText className="h-5 w-5 text-secondary" />, item.howToApplyKeys, "bg-secondary/10")}
+            </div>
+          )}
 
           {/* Where to Go */}
           <WhereToGo />
