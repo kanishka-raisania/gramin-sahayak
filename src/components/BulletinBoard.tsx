@@ -59,10 +59,10 @@ const BulletinBoard = () => {
     setTotal(result.total);
     setLoading(false);
 
-    // Request translations for dynamic items that don't have them yet
+    // Request translations for ALL DB items (RSS + seed) that don't have them yet
     if (language !== "en") {
       const untranslated = result.items.filter(
-        (i) => i.isDynamic && !i.staticItem && !i.translatedTitle && typeof i.id === "string"
+        (i) => !i.staticItem && !i.translatedTitle && typeof i.id === "string"
       );
       if (untranslated.length > 0) {
         const translations = await requestTranslations(
@@ -74,7 +74,7 @@ const BulletinBoard = () => {
 
         setItems((prev) =>
           prev.map((item) => {
-            if (!item.isDynamic || typeof item.id !== "string") return item;
+            if (item.staticItem || typeof item.id !== "string") return item;
             const tr = translations.get(item.id);
             return tr
               ? { ...item, translatedTitle: tr.title, translatedDescription: tr.description }
@@ -180,7 +180,8 @@ const BulletinBoard = () => {
               key={String(b.id)}
               item={toNewsItem(b)}
               index={i}
-              isDynamic={b.isDynamic && !b.staticItem}
+              isDynamic={!b.staticItem}
+              isLiveFeed={b.isDynamic && !b.staticItem}
               onClick={() => setSelected(b)}
             />
           ))}
@@ -227,7 +228,7 @@ const BulletinBoard = () => {
         item={selected ? toNewsItem(selected) : null}
         open={!!selected}
         onClose={() => setSelected(null)}
-        isDynamic={!!selected && selected.isDynamic && !selected.staticItem}
+        isDynamic={!!selected && !selected.staticItem}
       />
     </section>
   );

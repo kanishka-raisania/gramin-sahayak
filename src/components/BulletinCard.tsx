@@ -18,11 +18,13 @@ interface BulletinCardProps {
   item: NewsItem;
   index: number;
   onClick: () => void;
-  /** When true, title/desc/source are raw strings (RSS) — skip translation lookup. */
+  /** When true, title/desc/source are raw strings (DB item) — skip translation lookup. */
   isDynamic?: boolean;
+  /** When true, show the red LIVE badge (only for actual RSS-fetched items, not seeds). */
+  isLiveFeed?: boolean;
 }
 
-const BulletinCard = ({ item, index, onClick, isDynamic = false }: BulletinCardProps) => {
+const BulletinCard = ({ item, index, onClick, isDynamic = false, isLiveFeed = false }: BulletinCardProps) => {
   const config = categoryConfig[item.category];
   const Icon = config.icon;
   const { t } = useLanguage();
@@ -41,7 +43,7 @@ const BulletinCard = ({ item, index, onClick, isDynamic = false }: BulletinCardP
     (Date.now() - new Date(item.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
   );
   const isNew = daysSincePublished <= 7;
-  const isExpiring = !isDynamic && daysSincePublished >= 20;
+  const isExpiring = !isLiveFeed && !isDynamic && daysSincePublished >= 20;
 
   return (
     <article
@@ -72,13 +74,13 @@ const BulletinCard = ({ item, index, onClick, isDynamic = false }: BulletinCardP
 
         {/* Status badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {isDynamic && (
+          {isLiveFeed && (
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/90 px-2 py-0.5 text-[10px] font-bold text-destructive-foreground shadow-md">
               <Radio className="h-2.5 w-2.5 animate-pulse" />
               {t("liveBadge" as TranslationKey)}
             </span>
           )}
-          {isNew && !isDynamic && (
+          {isNew && !isLiveFeed && !isDynamic && (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-md">
               <Sparkles className="h-2.5 w-2.5" />
               {t("badgeNew" as TranslationKey)}

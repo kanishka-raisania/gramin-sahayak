@@ -45,7 +45,7 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
   const Icon = config.icon;
   const imageUrl = imgError ? getCategoryFallbackImage(item.category) : item.imageUrl;
 
-  const formattedDate = new Date(item.publishedAt).toLocaleDateString("en-IN", {
+  const formattedDate = new Date(item.publishedAt).toLocaleDateString(`${language}-IN`, {
     day: "numeric", month: "long", year: "numeric",
   });
 
