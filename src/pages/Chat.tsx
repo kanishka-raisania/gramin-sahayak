@@ -2,7 +2,7 @@
  * Chat — AI chatbot with voice input/output, streaming, personalized context
  */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Loader2, Bot, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Send, Loader2, Bot, Mic, MicOff, Volume2, VolumeX, StopCircle } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
 import { useVoice } from "@/hooks/useVoice";
@@ -36,6 +36,8 @@ const Chat = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // Index of the bot message currently being spoken aloud (-1 = none)
+  const [speakingIdx, setSpeakingIdx] = useState(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef(getSessionId());
 
@@ -202,11 +204,14 @@ const Chat = () => {
         });
       }
 
-      // Voice output — speak the response
+      // Voice output — speak the response (TTS is on by default)
       if (assistantText && voice.voiceEnabled) {
-        // Strip markdown for speech
-        const cleanText = assistantText.replace(/\*\*/g, "").replace(/[•\-]\s/g, "").slice(0, 500);
-        voice.speak(cleanText);
+        // Track which message bubble is being read so the UI can highlight it
+        setMessages((prev) => {
+          setSpeakingIdx(prev.length - 1);
+          return prev;
+        });
+        voice.speak(assistantText);
       }
     } catch (e) {
       console.error("Chat error:", e);
@@ -217,6 +222,11 @@ const Chat = () => {
       setIsLoading(false);
     }
   };
+
+  // Clear speaking highlight as soon as synthesis finishes
+  useEffect(() => {
+    if (!voice.isSpeaking) setSpeakingIdx(-1);
+  }, [voice.isSpeaking]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -273,19 +283,37 @@ const Chat = () => {
             </div>
           </div>
 
-          {/* Voice mode toggle */}
+          {/* TTS controls */}
           {voice.hasSynthesis && (
-            <button
-              onClick={voice.toggleVoiceMode}
-              className={`rounded-full p-2.5 transition-colors ${
-                voice.voiceEnabled
-                  ? "bg-primary-foreground/30 text-primary-foreground"
-                  : "bg-primary-foreground/10 text-primary-foreground/60"
-              }`}
-              title={voice.voiceEnabled ? t("voiceOn" as TranslationKey) : t("voiceOff" as TranslationKey)}
-            >
-              {voice.voiceEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-            </button>
+            <div className="flex items-center gap-1.5">
+              {/* Stop speaking button — only visible while reading aloud */}
+              {voice.isSpeaking && (
+                <button
+                  onClick={() => { voice.stopSpeaking(); setSpeakingIdx(-1); }}
+                  className="rounded-full p-2 bg-destructive/90 text-white animate-pulse"
+                  title="Stop speaking"
+                >
+                  <StopCircle className="h-4 w-4" />
+                </button>
+              )}
+              {/* TTS on/off toggle */}
+              <button
+                onClick={voice.toggleVoiceMode}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                  voice.voiceEnabled
+                    ? "bg-primary-foreground/30 text-primary-foreground"
+                    : "bg-primary-foreground/10 text-primary-foreground/50"
+                }`}
+                title={voice.voiceEnabled ? "TTS on — tap to mute" : "TTS off — tap to enable"}
+              >
+                {voice.voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                <span className="hidden sm:inline">
+                  {voice.voiceEnabled
+                    ? (voice.ttsEngine === "sarvam" ? "Sarvam" : "Voice on")
+                    : "Voice off"}
+                </span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -309,9 +337,23 @@ const Chat = () => {
       {/* Messages */}
       <ScrollArea className="flex-1 px-4 py-4 container mx-auto">
         <div className="space-y-3">
-          {messages.map((msg, i) => (
-            <ChatMessageBubble key={i} message={msg} />
-          ))}
+          {messages.map((msg, i) => {
+            const isBeingSpoken = i === speakingIdx && voice.isSpeaking;
+            return (
+              <div key={i} className={isBeingSpoken ? "relative" : ""}>
+                {/* Pulsing speaker badge on the message being read */}
+                {isBeingSpoken && (
+                  <div className="absolute -top-1.5 left-8 z-10 flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow animate-pulse">
+                    <Volume2 className="h-2.5 w-2.5" />
+                    <span>Speaking…</span>
+                  </div>
+                )}
+                <div className={isBeingSpoken ? "rounded-2xl ring-2 ring-primary/40 ring-offset-1" : ""}>
+                  <ChatMessageBubble message={msg} />
+                </div>
+              </div>
+            );
+          })}
 
           {/* Typing indicator */}
           {isLoading && messages[messages.length - 1]?.sender === "user" && (
