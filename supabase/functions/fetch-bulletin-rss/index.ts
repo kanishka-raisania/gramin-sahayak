@@ -16,6 +16,7 @@ interface FeedConfig {
 
 // Public Indian RSS feeds — PIB requires browser UA
 const FEEDS: FeedConfig[] = [
+  // National feeds
   { url: "https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3", source: "Press Information Bureau", defaultCategory: "General" },
   { url: "https://pib.gov.in/RssMain.aspx?ModId=8&Lang=1&Regid=3", source: "Ministry of Agriculture", defaultCategory: "Farmer" },
   { url: "https://pib.gov.in/RssMain.aspx?ModId=22&Lang=1&Regid=3", source: "Ministry of Labour", defaultCategory: "Worker" },
@@ -23,6 +24,12 @@ const FEEDS: FeedConfig[] = [
   { url: "https://pib.gov.in/RssMain.aspx?ModId=29&Lang=1&Regid=3", source: "Ministry of Rural Development", defaultCategory: "General" },
   { url: "https://www.thehindu.com/news/national/feeder/default.rss", source: "The Hindu - National", defaultCategory: "General" },
   { url: "https://www.thehindu.com/business/agri-business/feeder/default.rss", source: "The Hindu - Agri Business", defaultCategory: "Farmer" },
+  // State-specific feeds — source name encodes the state for client-side filtering
+  { url: "https://www.thehindu.com/news/national/kerala/feeder/default.rss", source: "The Hindu - Kerala", defaultCategory: "General" },
+  { url: "https://www.thehindu.com/news/national/tamil-nadu/feeder/default.rss", source: "The Hindu - Tamil Nadu", defaultCategory: "General" },
+  { url: "https://www.thehindu.com/news/national/karnataka/feeder/default.rss", source: "The Hindu - Karnataka", defaultCategory: "General" },
+  { url: "https://www.thehindu.com/news/national/andhra-pradesh/feeder/default.rss", source: "The Hindu - Andhra Pradesh", defaultCategory: "General" },
+  { url: "https://www.thehindu.com/news/national/telangana/feeder/default.rss", source: "The Hindu - Telangana", defaultCategory: "General" },
 ];
 
 const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";

@@ -119,6 +119,22 @@ export async function requestTranslations(
   return map;
 }
 
+/**
+ * Score how relevant a bulletin item is for a given state.
+ * 3 = dedicated state feed (source contains state name)
+ * 2 = state name appears in the title
+ * 1 = state name appears in the description
+ * 0 = national / no match
+ */
+function stateRelevanceScore(item: BulletinItem, state: string): number {
+  if (!state) return 0;
+  const s = state.toLowerCase();
+  if (item.source.toLowerCase().includes(s)) return 3;
+  if ((item.translatedTitle || item.title).toLowerCase().includes(s)) return 2;
+  if ((item.translatedDescription || item.description).toLowerCase().includes(s)) return 1;
+  return 0;
+}
+
 // Returns paginated bulletin items with translations merged
 export async function getBulletinPage(
   page: number,
@@ -126,7 +142,7 @@ export async function getBulletinPage(
   category?: string,
   userRole?: string,
   language?: string,
-  userState?: string | null,
+  userState?: string,
 ): Promise<{ items: BulletinItem[]; total: number; fromCache: boolean }> {
   const cached = cacheGet<BulletinItem[]>(CACHE_KEY);
   let all: BulletinItem[] = cached || [];
@@ -169,10 +185,10 @@ export async function getBulletinPage(
     filtered = all.filter((i) => i.category === category);
   }
 
-  // Role-based priority sort
+  // Role-based priority sort (within same state-relevance tier)
   if (userRole && (!category || category === "All")) {
-    const map: Record<string, string> = { farmer: "Farmer", worker: "Worker", citizen: "General" };
-    const pref = map[userRole];
+    const roleMap: Record<string, string> = { farmer: "Farmer", worker: "Worker", citizen: "General" };
+    const pref = roleMap[userRole];
     if (pref) {
       filtered = [
         ...filtered.filter((i) => i.category === pref),
@@ -181,13 +197,16 @@ export async function getBulletinPage(
     }
   }
 
-  // State/Location-based priority sort
-  if (userState && (!category || category === "All")) {
-    const stateRegex = new RegExp(userState, "i");
-    filtered = [
-      ...filtered.filter((i) => stateRegex.test(i.title) || stateRegex.test(i.description)),
-      ...filtered.filter((i) => !(stateRegex.test(i.title) || stateRegex.test(i.description))),
-    ];
+  // State-based priority sort — runs last so state relevance is the primary axis.
+  // Items are grouped: score 3 (dedicated state feed) → 2 (title match) →
+  // 1 (description match) → 0 (national), preserving relative order within each group.
+  if (userState) {
+    const scored = filtered.map((item) => ({
+      item,
+      score: stateRelevanceScore(item, userState),
+    }));
+    scored.sort((a, b) => b.score - a.score);
+    filtered = scored.map((s) => s.item);
   }
 
   const start = (page - 1) * perPage;

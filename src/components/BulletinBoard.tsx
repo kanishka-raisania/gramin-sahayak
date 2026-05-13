@@ -7,7 +7,7 @@ import type { NewsItem } from "@/data/api";
 import BulletinCard from "./BulletinCard";
 import SchemeDetailModal from "./SchemeDetailModal";
 import { BulletinSkeletonGrid } from "./BulletinSkeleton";
-import { Newspaper, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Newspaper, RefreshCw, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
 import type { TranslationKey } from "@/i18n/translations";
@@ -52,7 +52,7 @@ const BulletinBoard = () => {
   const loadPage = async (p: number, cat: CategoryFilter, showSpinner = true) => {
     const requestId = ++latestRequestRef.current;
     if (showSpinner) setLoading(true);
-    const result = await getBulletinPage(p, ITEMS_PER_PAGE, cat, profile?.role, language, profile?.state);
+    const result = await getBulletinPage(p, ITEMS_PER_PAGE, cat, profile?.role, language, profile?.state ?? undefined);
     if (requestId !== latestRequestRef.current) return;
 
     setItems(result.items);
@@ -88,7 +88,7 @@ const BulletinBoard = () => {
   useEffect(() => {
     loadPage(page, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filter, language]);
+  }, [page, filter, language, profile?.state]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -122,11 +122,21 @@ const BulletinBoard = () => {
   return (
     <section className="w-full">
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2.5">
-          <Newspaper className="h-6 w-6 text-primary" />
-          <h2 className="text-xl font-extrabold text-foreground">
-            {t("bulletinTitle")}
-          </h2>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2.5">
+            <Newspaper className="h-6 w-6 text-primary" />
+            <h2 className="text-xl font-extrabold text-foreground">
+              {t("bulletinTitle")}
+            </h2>
+          </div>
+          {profile?.state && (
+            <div className="flex items-center gap-1.5 ml-0.5">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                {profile.state}
+              </span>
+            </div>
+          )}
         </div>
         <button
           onClick={handleRefresh}
