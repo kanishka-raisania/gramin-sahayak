@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { UserProfileProvider } from "@/contexts/UserProfileContext";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import LanguageSelector from "@/components/LanguageSelector";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import Chat from "./pages/Chat";
 import Verify from "./pages/Verify";
 import About from "./pages/About";
@@ -30,6 +31,11 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { isFirstLaunch } = useLanguage();
   const { isOnboarded } = useUserProfile();
+  const location = useLocation();
+
+  if (location.pathname === "/") {
+    return <Landing />;
+  }
 
   if (isFirstLaunch) {
     return <LanguageSelector />;
@@ -43,7 +49,7 @@ const AppContent = () => {
     <>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/news/:id" element={<NewsDetail />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/verify" element={<Verify />} />

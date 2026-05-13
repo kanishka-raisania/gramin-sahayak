@@ -126,6 +126,7 @@ export async function getBulletinPage(
   category?: string,
   userRole?: string,
   language?: string,
+  userState?: string | null,
 ): Promise<{ items: BulletinItem[]; total: number; fromCache: boolean }> {
   const cached = cacheGet<BulletinItem[]>(CACHE_KEY);
   let all: BulletinItem[] = cached || [];
@@ -178,6 +179,15 @@ export async function getBulletinPage(
         ...filtered.filter((i) => i.category !== pref),
       ];
     }
+  }
+
+  // State/Location-based priority sort
+  if (userState && (!category || category === "All")) {
+    const stateRegex = new RegExp(userState, "i");
+    filtered = [
+      ...filtered.filter((i) => stateRegex.test(i.title) || stateRegex.test(i.description)),
+      ...filtered.filter((i) => !(stateRegex.test(i.title) || stateRegex.test(i.description))),
+    ];
   }
 
   const start = (page - 1) * perPage;

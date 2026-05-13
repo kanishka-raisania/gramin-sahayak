@@ -52,7 +52,7 @@ const BulletinBoard = () => {
   const loadPage = async (p: number, cat: CategoryFilter, showSpinner = true) => {
     const requestId = ++latestRequestRef.current;
     if (showSpinner) setLoading(true);
-    const result = await getBulletinPage(p, ITEMS_PER_PAGE, cat, profile?.role, language);
+    const result = await getBulletinPage(p, ITEMS_PER_PAGE, cat, profile?.role, language, profile?.state);
     if (requestId !== latestRequestRef.current) return;
 
     setItems(result.items);
