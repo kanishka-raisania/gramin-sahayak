@@ -17,76 +17,232 @@ type CategoryFilter = "All" | "Farmer" | "Worker" | "General";
 const ITEMS_PER_PAGE = 9;
 
 /**
- * Maps topic keywords found in a news title to a relevant Unsplash photo.
- * First matching keyword group wins. Falls back to category-based images.
+ * Each topic has a POOL of 4-5 images.
+ * The item's unique ID is hashed to pick one — so two articles on the same
+ * topic always get DIFFERENT photos. Includes Hindi keywords for translated titles.
  */
-const TOPIC_IMAGES: { keywords: string[]; url: string }[] = [
-  // Livestock / Animals
-  { keywords: ["livestock", "cattle", "cow", "buffalo", "dairy", "milk", "poultry", "sheep", "goat", "pig", "animal husbandry", "vaccination", "vaccine", "pashu"],
-    url: "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=400&fit=crop" },
-  // Crops / Harvest
-  { keywords: ["paddy", "rice", "wheat", "crop", "harvest", "kharif", "rabi", "msp", "minimum support", "grain", "cereal", "sugarcane"],
-    url: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&h=400&fit=crop" },
-  // Soil / Fertilizer
-  { keywords: ["fertilizer", "fertiliser", "soil", "nutrient", "urea", "organic", "compost", "soil health"],
-    url: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600&h=400&fit=crop" },
-  // Irrigation / Water
-  { keywords: ["irrigation", "water", "dam", "canal", "flood", "drought", "jal", "river", "well", "borewell"],
-    url: "https://images.unsplash.com/photo-1560493676-04071185765e?w=600&h=400&fit=crop" },
-  // Fishery
-  { keywords: ["fishery", "fish", "aquaculture", "seafood", "fishermen", "matsya"],
-    url: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop" },
-  // Farm Machinery / Tractor
-  { keywords: ["tractor", "machinery", "equipment", "mechanization", "drone", "technology farm"],
-    url: "https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=600&h=400&fit=crop" },
-  // Labour / MGNREGA
-  { keywords: ["mgnrega", "nrega", "wage", "labour", "labor", "employment", "job card", "mazdoor", "rozgar", "worker"],
-    url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop" },
-  // Skills / Training
-  { keywords: ["skill", "training", "vocational", "apprentice", "pmkvy", "kaushal"],
-    url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop" },
-  // Health / Medical
-  { keywords: ["health", "hospital", "medical", "ayushman", "pmjay", "doctor", "medicine", "healthcare", "nursing", "clinic", "swasthya"],
-    url: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop" },
-  // Housing
-  { keywords: ["housing", "home", "house", "awas", "pmay", "shelter", "construction", "building", "makaan"],
-    url: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop" },
-  // Education / Scholarship
-  { keywords: ["education", "school", "scholarship", "student", "study", "college", "learning", "shiksha", "vidya"],
-    url: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&h=400&fit=crop" },
-  // Finance / Loan / Insurance
-  { keywords: ["loan", "credit", "bank", "finance", "mudra", "kcc", "kisan credit", "subsidy", "insurance", "fasal bima"],
-    url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop" },
-  // Food / Ration / PDS
-  { keywords: ["ration", "food", "pds", "grain distribution", "nutrition", "anaj", "ann", "mid day meal"],
-    url: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&h=400&fit=crop" },
-  // Women / Self Help Groups
-  { keywords: ["women", "mahila", "self help group", "shg", "ujjwala", "sakhi", "stree", "nari"],
-    url: "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?w=600&h=400&fit=crop" },
-  // Solar / Energy
-  { keywords: ["solar", "energy", "electricity", "power", "renewable", "pm kusum", "bijli"],
-    url: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=400&fit=crop" },
-  // Roads / Infrastructure
-  { keywords: ["road", "highway", "infrastructure", "pmgsy", "bridge", "transport", "sadak"],
-    url: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&h=400&fit=crop" },
-  // Digital / Technology
-  { keywords: ["digital", "internet", "online", "app", "technology", "cyber", "broadband"],
-    url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&h=400&fit=crop" },
+const TOPIC_POOLS: { keywords: string[]; urls: string[] }[] = [
+  {
+    keywords: ["livestock", "cattle", "cow", "buffalo", "dairy", "milk", "poultry", "sheep", "goat", "pig",
+               "animal husbandry", "vaccination", "vaccine", "pashu", "पशु", "गाय", "भैंस", "टीकाकरण", "डेयरी"],
+    urls: [
+      "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1560493676-04071185765e?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1444858291040-58f756a3bdd6?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["paddy", "rice", "wheat", "crop", "harvest", "kharif", "rabi", "msp", "minimum support",
+               "grain", "cereal", "sugarcane", "fasal", "फसल", "खरीफ", "रबी", "गेहूं", "धान", "चावल", "गन्ना"],
+    urls: [
+      "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1440342359743-84fcb8c21f21?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["fertilizer", "fertiliser", "soil", "nutrient", "urea", "organic", "compost",
+               "उर्वरक", "मिट्टी", "खाद", "जैविक"],
+    urls: [
+      "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["irrigation", "water", "dam", "canal", "flood", "drought", "jal", "river",
+               "सिंचाई", "जल", "बाढ़", "नदी", "नहर", "सूखा", "बांध"],
+    urls: [
+      "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["fishery", "fish", "aquaculture", "seafood", "fishermen", "matsya", "prawn", "shrimp",
+               "मछली", "मत्स्य", "झींगा", "मछुआरे", "चारा"],
+    urls: [
+      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1504472478235-9bc48ba4d60f?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["tractor", "machinery", "equipment", "mechanization", "drone",
+               "ट्रैक्टर", "मशीन", "यंत्र"],
+    urls: [
+      "https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1536657464919-892534f60d6e?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1595855759920-86582396756a?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["mgnrega", "nrega", "wage", "labour", "labor", "employment", "job card", "mazdoor", "rozgar",
+               "मजदूरी", "रोजगार", "मजदूर", "श्रमिक", "नरेगा", "मनरेगा"],
+    urls: [
+      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1590650153855-d9e808231d41?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["skill", "training", "vocational", "apprentice", "pmkvy", "kaushal",
+               "कौशल", "प्रशिक्षण", "रोजगार प्रशिक्षण"],
+    urls: [
+      "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["health", "hospital", "medical", "ayushman", "pmjay", "doctor", "medicine", "healthcare", "nursing",
+               "स्वास्थ्य", "अस्पताल", "डॉक्टर", "आयुष्मान", "दवा", "चिकित्सा"],
+    urls: [
+      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["housing", "home", "house", "awas", "pmay", "shelter", "construction", "building",
+               "आवास", "मकान", "घर", "निर्माण", "इमारत"],
+    urls: [
+      "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1582407947304-fd86f28f9e91?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["education", "school", "scholarship", "student", "study", "college", "learning",
+               "शिक्षा", "विद्यालय", "छात्र", "पढ़ाई", "स्कूल", "छात्रवृत्ति"],
+    urls: [
+      "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["loan", "credit", "bank", "finance", "mudra", "kcc", "kisan credit", "subsidy", "insurance",
+               "ऋण", "क्रेडिट", "बैंक", "वित्त", "बीमा", "सब्सिडी", "फसल बीमा"],
+    urls: [
+      "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["ration", "food", "pds", "nutrition", "mid day meal", "anganwadi",
+               "राशन", "खाद्य", "अनाज", "पोषण", "मध्याह्न भोजन"],
+    urls: [
+      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["women", "mahila", "self help group", "shg", "ujjwala", "sakhi",
+               "महिला", "स्वयं सहायता समूह", "नारी", "उज्ज्वला"],
+    urls: [
+      "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["solar", "energy", "electricity", "power", "renewable", "kusum", "bijli",
+               "सौर", "बिजली", "ऊर्जा", "नवीकरणीय"],
+    urls: [
+      "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1548337138-e87d889cc369?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["road", "highway", "infrastructure", "pmgsy", "bridge", "transport",
+               "सड़क", "राजमार्ग", "पुल", "यातायात", "परिवहन"],
+    urls: [
+      "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1518623489648-a173ef7824f3?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["land", "property", "revenue", "court", "legal", "order", "challenge", "stadium", "college",
+               "जमीन", "संपत्ति", "कोर्ट", "कानूनी", "आदेश", "भूमि", "भूमि आवंटन"],
+    urls: [
+      "https://images.unsplash.com/photo-1423592707957-3b212afa6733?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1575517111839-3a3843ee7f5d?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["election", "politics", "candidate", "party", "minister", "cm", "government",
+               "चुनाव", "राजनीति", "उम्मीदवार", "मुख्यमंत्री", "सरकार", "मंत्री"],
+    urls: [
+      "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1519452575417-564c1401ecc0?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1494172961521-33799ddd43a5?w=600&h=400&fit=crop",
+    ],
+  },
 ];
 
-const CATEGORY_FALLBACKS: Record<string, string> = {
-  Farmer:  "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&h=400&fit=crop",
-  Worker:  "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&h=400&fit=crop",
-  General: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=600&h=400&fit=crop",
+/** Per-category fallback pools used when no topic keyword matches. */
+const CATEGORY_POOLS: Record<string, string[]> = {
+  Farmer: [
+    "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c10?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1491900177661-4e1cd2d7cce2?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1560493676-04071185765e?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=600&h=400&fit=crop",
+  ],
+  Worker: [
+    "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1513828583688-c52646db42da?w=600&h=400&fit=crop",
+  ],
+  General: [
+    "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1577495508326-19a1b3cf65b7?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=600&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&h=400&fit=crop",
+  ],
 };
 
-/** Pick a relevant image by scanning the item title for topic keywords. */
-function getRelevantImage(title: string, category: string): string {
+/** Deterministic hash of a string → non-negative integer. */
+function strHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+/**
+ * Pick a relevant, unique image for a DB bulletin item.
+ * - Scans title for topic keywords (English + Hindi).
+ * - When a topic matches, uses the item's unique ID to select from that
+ *   topic's image pool — so two articles on the same topic get DIFFERENT photos.
+ * - Falls back to a per-category pool if no topic keyword matches.
+ */
+function getRelevantImage(title: string, category: string, itemId: string | number): string {
   const lower = title.toLowerCase();
-  for (const { keywords, url } of TOPIC_IMAGES) {
-    if (keywords.some((kw) => lower.includes(kw))) return url;
+  const seed = String(itemId);
+  for (const { keywords, urls } of TOPIC_POOLS) {
+    if (keywords.some((kw) => lower.includes(kw))) {
+      return urls[strHash(seed) % urls.length];
+    }
   }
-  return CATEGORY_FALLBACKS[category] || CATEGORY_FALLBACKS.General;
+  const pool = CATEGORY_POOLS[category] || CATEGORY_POOLS.General;
+  return pool[strHash(seed) % pool.length];
 }
 
 function toNewsItem(b: BulletinItem): NewsItem {
@@ -98,7 +254,7 @@ function toNewsItem(b: BulletinItem): NewsItem {
     descKey: b.translatedDescription || b.description,
     simpleSummaryKey: b.translatedDescription || b.description,
     category: b.category,
-    imageUrl: getRelevantImage(title, b.category),
+    imageUrl: getRelevantImage(title, b.category, b.id),
     publishedAt: b.publish_date,
     source: b.source,
     sourceKey: b.source,
