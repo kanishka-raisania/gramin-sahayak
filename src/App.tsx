@@ -33,13 +33,11 @@ const AppContent = () => {
   const { isOnboarded } = useUserProfile();
   const location = useLocation();
 
-  // Landing page — only for users who haven't onboarded yet
-  if (location.pathname === "/" && !isOnboarded && !isFirstLaunch) {
-    return <Landing />;
-  }
-
-  // Onboarded users hitting "/" go straight to the home feed
-  if (location.pathname === "/" && isOnboarded) {
+  // Always show Landing page on root for new users
+  if (location.pathname === "/") {
+    if (!isOnboarded) {
+      return <Landing />;
+    }
     return <Navigate to="/home" replace />;
   }
 

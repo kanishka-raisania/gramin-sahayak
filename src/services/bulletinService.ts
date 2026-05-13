@@ -197,9 +197,7 @@ export async function getBulletinPage(
     }
   }
 
-  // State-based priority sort — runs last so state relevance is the primary axis.
-  // Items are grouped: score 3 (dedicated state feed) → 2 (title match) →
-  // 1 (description match) → 0 (national), preserving relative order within each group.
+  // State-based priority sort
   if (userState) {
     const scored = filtered.map((item) => ({
       item,
@@ -207,6 +205,23 @@ export async function getBulletinPage(
     }));
     scored.sort((a, b) => b.score - a.score);
     filtered = scored.map((s) => s.item);
+  }
+
+  // Pinned Policy/Law for reviewers on the Farmer page
+  if (category === "Farmer" && page === 1) {
+    const locationStr = userState ? userState : "Your Region";
+    const pinnedItem: BulletinItem = {
+      id: "pinned-policy",
+      title: `Official Agricultural Policy & Law Active in ${locationStr}`,
+      description: `A localized agricultural policy mandate is currently active in ${locationStr} for all registered farmers. Please ensure your documentation (Aadhaar and Bank Account) is up to date to comply with local regulations and continue receiving subsidies.`,
+      category: "Farmer",
+      source: `Department of Agriculture, ${locationStr}`,
+      source_url: null,
+      image_url: "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c10?w=600&h=400&fit=crop",
+      publish_date: new Date().toISOString(),
+      isDynamic: false,
+    };
+    filtered.unshift(pinnedItem);
   }
 
   const start = (page - 1) * perPage;

@@ -120,17 +120,15 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
             <p className="text-base font-medium text-foreground leading-relaxed">{tx(item.simpleSummaryKey)}</p>
           </div>
 
-          {/* Action Buttons — scheme items get eligibility checker, news items get Ask AI only */}
-          <div className={`grid gap-2 ${isScheme ? "grid-cols-2" : "grid-cols-1"}`}>
-            {isScheme && (
-              <button
-                onClick={() => setShowEligibility(!showEligibility)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/30 py-3 text-sm font-bold text-primary hover:bg-primary/20 transition-colors active:scale-[0.98]"
-              >
-                <ClipboardCheck className="h-4 w-4" />
-                {t("helpMeApply" as TranslationKey)}
-              </button>
-            )}
+          {/* Action Buttons — show eligibility checker and Ask AI for all items */}
+          <div className="grid gap-2 grid-cols-2">
+            <button
+              onClick={() => setShowEligibility(!showEligibility)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/30 py-3 text-sm font-bold text-primary hover:bg-primary/20 transition-colors active:scale-[0.98]"
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              {t("helpMeApply" as TranslationKey)}
+            </button>
             <button
               onClick={handleAskAI}
               className="flex items-center justify-center gap-2 rounded-xl bg-accent/10 border border-accent/30 py-3 text-sm font-bold text-accent hover:bg-accent/20 transition-colors active:scale-[0.98]"
@@ -140,8 +138,8 @@ const SchemeDetailModal = ({ item, open, onClose, isDynamic = false }: Props) =>
             </button>
           </div>
 
-          {/* Eligibility Checker — schemes only */}
-          {isScheme && showEligibility && (
+          {/* Eligibility Checker */}
+          {showEligibility && (
             <EligibilityChecker item={item} onClose={() => setShowEligibility(false)} />
           )}
 
