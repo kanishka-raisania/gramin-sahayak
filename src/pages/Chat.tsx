@@ -204,15 +204,7 @@ const Chat = () => {
         });
       }
 
-      // Voice output — speak the response (TTS is on by default)
-      if (assistantText && voice.voiceEnabled) {
-        // Track which message bubble is being read so the UI can highlight it
-        setMessages((prev) => {
-          setSpeakingIdx(prev.length - 1);
-          return prev;
-        });
-        voice.speak(assistantText);
-      }
+      // Voice output is now manual. Do not automatically speak.
     } catch (e) {
       console.error("Chat error:", e);
       const errorMessage = friendlyErrorMessage(e);
@@ -232,6 +224,17 @@ const Chat = () => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleToggleSpeak = (index: number, text: string) => {
+    if (speakingIdx === index && voice.isSpeaking) {
+      voice.stopSpeaking();
+      setSpeakingIdx(-1);
+    } else {
+      voice.stopSpeaking();
+      setSpeakingIdx(index);
+      voice.speak(text);
     }
   };
 
@@ -349,7 +352,11 @@ const Chat = () => {
                   </div>
                 )}
                 <div className={isBeingSpoken ? "rounded-2xl ring-2 ring-primary/40 ring-offset-1" : ""}>
-                  <ChatMessageBubble message={msg} />
+                  <ChatMessageBubble 
+                    message={msg} 
+                    isSpeaking={isBeingSpoken}
+                    onToggleSpeak={msg.sender === "bot" ? () => handleToggleSpeak(i, msg.text) : undefined}
+                  />
                 </div>
               </div>
             );

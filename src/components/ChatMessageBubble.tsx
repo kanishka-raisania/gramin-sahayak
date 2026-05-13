@@ -4,7 +4,7 @@
  * User messages: white/card, right-aligned
  * Formats **bold** and bullet points
  */
-import { User } from "lucide-react";
+import { User, Volume2, StopCircle } from "lucide-react";
 import avatar1 from "@/assets/avatar-farmer-1.jpg";
 import avatar2 from "@/assets/avatar-farmer-2.jpg";
 import avatar3 from "@/assets/avatar-farmer-3.jpg";
@@ -50,7 +50,15 @@ function formatMessageText(text: string): React.ReactNode[] {
   });
 }
 
-const ChatMessageBubble = ({ message }: { message: Message }) => {
+const ChatMessageBubble = ({ 
+  message, 
+  isSpeaking, 
+  onToggleSpeak 
+}: { 
+  message: Message, 
+  isSpeaking?: boolean, 
+  onToggleSpeak?: () => void 
+}) => {
   const isUser = message.sender === "user";
 
   return (
@@ -75,6 +83,28 @@ const ChatMessageBubble = ({ message }: { message: Message }) => {
         }`}
       >
         {formatMessageText(message.text)}
+        {!isUser && onToggleSpeak && (
+          <div className="mt-2 flex justify-end">
+            <button
+              onClick={onToggleSpeak}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                isSpeaking 
+                  ? "bg-destructive/10 text-destructive hover:bg-destructive/20" 
+                  : "bg-primary/20 text-primary hover:bg-primary/30"
+              }`}
+            >
+              {isSpeaking ? (
+                <>
+                  <StopCircle className="h-3.5 w-3.5 animate-pulse" /> Stop
+                </>
+              ) : (
+                <>
+                  <Volume2 className="h-3.5 w-3.5" /> Listen
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
